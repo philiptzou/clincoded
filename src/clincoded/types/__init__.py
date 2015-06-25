@@ -16,7 +16,7 @@ from .base import (
 def includeme(config):
     config.scan()
 
-### new collection added for orphaPhenotype.json, 06/19/2015
+### new collections added for handling curation data, 06/19/2015
 @collection(
     name='diseases',
     unique_key='orphaPhenotype:orphaNumber',
@@ -28,7 +28,19 @@ class OrphaPhenotype(Item):
     item_type = 'orphaPhenotype'
     schema = load_schema('clincoded:schemas/orphaPhenotype.json')
     name_key = 'orphaNumber'
-### end of new collection for orphaPhenotype.json
+
+@collection(
+    name='articles',
+    unique_key='article:pmid',
+    properties={
+        'title': 'Articles',
+        'description': 'List of PubMed Articles',
+    })
+class Article(Item):
+    item_type = 'article'
+    schema = load_schema('clincoded:schemas/article.json')
+    name_key = 'pmid'
+### end of new collections for curation data
 
 
 @collection(
