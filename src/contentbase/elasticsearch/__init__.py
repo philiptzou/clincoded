@@ -1,7 +1,7 @@
 from contentbase.json_renderer import json_renderer
 from contentbase.util import get_root_request
 from elasticsearch import Elasticsearch
-from elasticsearch.connection import RequestsHttpConnection
+from elasticsearch.connection import Urllib3HttpConnection
 from elasticsearch.serializer import SerializationError
 from pyramid.settings import (
     asbool,
@@ -73,7 +73,7 @@ class PyramidJSONSerializer(object):
             raise SerializationError(data, e)
 
 
-class TimedUrllib3HttpConnection(RequestsHttpConnection):
+class TimedUrllib3HttpConnection(Urllib3HttpConnection):
     stats_count_key = 'es_count'
     stats_time_key = 'es_time'
 
