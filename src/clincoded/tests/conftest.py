@@ -587,3 +587,9 @@ def elasticsearch_server(request, elasticsearch_host_port):
     if process.poll() is None:
         process.terminate()
         process.wait()
+
+
+@pytest.fixture(scope='session')
+def splinter_webdriver():
+    """Override splinter webdriver name."""
+    return 'chrome'
