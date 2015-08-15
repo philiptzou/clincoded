@@ -27,6 +27,7 @@ Step 2a: Install or update dependencies::
 
     $ brew install libevent libmagic libxml2 libxslt elasticsearch openssl postgresql graphviz
     $ brew install freetype libjpeg libtiff littlecms webp  # Required by Pillow
+    $ brew install chromedriver #required for local BDD tests
 
 Note: For Mac < 10.9, the system python doesn't work. You should install Python with Homebrew::
 
