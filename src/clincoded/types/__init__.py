@@ -321,6 +321,7 @@ class Group(Item):
         #'control'
     ]
 
+
 @collection(
     name='families',
     unique_key='family:uuid',
@@ -361,6 +362,7 @@ class Family(Item):
     def associatedGroups(self, request, associatedGroups):
         return paths_filtered_by_status(request, associatedGroups)
 
+
 @collection(
     name='individuals',
     unique_key='individual:uuid',
@@ -379,7 +381,36 @@ class Individual(Item):
         'variants.submitted_by',
         'otherPMIDs',
         'otherPMIDs.submitted_by',
+        'associatedGroups',
+        'associatedFamilies',
     ]
+    rev = {
+        'associatedGroups': ('group', 'individualIncluded'),
+        'associatedFamilies': ('family', 'individualIncluded'),
+    }
+
+    @calculated_property(schema={
+        "title": "Associated Groups",
+        "type": "array",
+        "items": {
+            "type": ['string', 'object'],
+            "linkFrom": "group.individualIncluded",
+        },
+    })
+    def associatedGroups(self, request, associatedGroups):
+        return paths_filtered_by_status(request, associatedGroups)
+
+    @calculated_property(schema={
+        "title": "Associated Families",
+        "type": "array",
+        "items": {
+            "type": ['string', 'object'],
+            "linkFrom": "family.individualIncluded",
+        },
+    })
+    def associatedFamilies(self, request, associatedFamilies):
+        return paths_filtered_by_status(request, associatedFamilies)
+
 
 @collection(
     name='experimental',
