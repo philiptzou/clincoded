@@ -110,8 +110,50 @@ class Variant(Item):
     schema = load_schema('clincoded:schemas/variant.json')
     name_key = 'uuid'
     embedded = [
-        'submitted_by'
+        'submitted_by',
+        'associatedFamilies',
+        'associatedIndividuals',
+        'associatedExperimental',
     ]
+    rev = {
+        'associatedFamilies': ('family', 'segregation.variants'),
+        'associatedIndividuals': ('individual', 'variants'),
+        'associatedExperimental': ('experimental', 'variants'),
+    }
+
+    @calculated_property(schema={
+        "title": "Associated Families",
+        "type": "array",
+        "items": {
+            "type": ['string', 'object'],
+            "linkFrom": "family.segregation.variants",
+        },
+    })
+    def associatedFamilies(self, request, associatedFamilies):
+        return paths_filtered_by_status(request, associatedFamilies)
+
+    @calculated_property(schema={
+        "title": "Associated Individuals",
+        "type": "array",
+        "items": {
+            "type": ['string', 'object'],
+            "linkFrom": "individual.variants",
+        },
+    })
+    def associatedIndividuals(self, request, associatedIndividuals):
+        return paths_filtered_by_status(request, associatedIndividuals)
+
+    @calculated_property(schema={
+        "title": "Associated Experimental",
+        "type": "array",
+        "items": {
+            "type": ['string', 'object'],
+            "linkFrom": "experimental.variants",
+        },
+    })
+    def associatedExperimental(self, request, associatedExperimental):
+        return paths_filtered_by_status(request, associatedExperimental)
+
 
 @collection(
     name='gdm',
