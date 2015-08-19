@@ -51,6 +51,12 @@
                 "Other"
             ]
         },
+        "modeCode": {
+            "title": "Model Code",
+            "description": "Internal digital unique code for each model",
+            "type": "string",
+            "uniqueKey": true
+        },
         "omimId": {
             "title": "OMIM ID",
             "description": "OMIM id",
@@ -244,6 +250,10 @@
             "title": "Mode of Inheritance",
             "type": "string"
         },
+        "modeCode": {
+            "title": "Model Code",
+            "type": "string"
+        },
         "omimId": {
             "title": "OMIM ID",
             "type": "string"
@@ -262,14 +272,6 @@
         },
         "provisionalClassifications": {
             "title": "Provisional Assertion",
-            "type": "string"
-        },
-        "draftClassification": {
-            "title": "Draft Assertion",
-            "type": "string"
-        },
-        "finalClassification": {
-            "title": "Final Assertion",
             "type": "string"
         },
         "date_created": {
