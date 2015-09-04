@@ -582,15 +582,11 @@ class Individual(Item):
         'otherPMIDs',
         'otherPMIDs.submitted_by',
         'associatedGroups',
-<<<<<<< HEAD
-        'associatedFamilies',
-=======
         'associatedGroups.commonDiagnosis',
         'associatedFamilies',
         'associatedFamilies.associatedGroups',
         'associatedFamilies.commonDiagnosis',
         'associatedFamilies.individualIncluded'
->>>>>>> dev
     ]
     rev = {
         'associatedGroups': ('group', 'individualIncluded'),
@@ -598,11 +594,7 @@ class Individual(Item):
     }
 
     @calculated_property(schema={
-<<<<<<< HEAD
-        "title": "Associated Groups",
-=======
         "title": "Associated groups",
->>>>>>> dev
         "type": "array",
         "items": {
             "type": ['string', 'object'],
@@ -613,11 +605,7 @@ class Individual(Item):
         return paths_filtered_by_status(request, associatedGroups)
 
     @calculated_property(schema={
-<<<<<<< HEAD
-        "title": "Associated Families",
-=======
         "title": "Associated families",
->>>>>>> dev
         "type": "array",
         "items": {
             "type": ['string', 'object'],
