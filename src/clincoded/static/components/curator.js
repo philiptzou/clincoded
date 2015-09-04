@@ -30,16 +30,11 @@ var CurationMixin = module.exports.CurationMixin = {
     // React state variable.
     updateOmimId: function(gdmUuid, newOmimId) {
         this.getRestData(
-            '/gdm/' + gdmUuid + '/?frame=object'
+            '/gdm/' + gdmUuid
         ).then(gdmObj => {
-            // We'll get 422 (Unprocessible entity) if we PUT any of these fields:
-            if (gdmObj.uuid) { delete gdmObj.uuid; }
-            if (gdmObj['@id']) { delete gdmObj['@id']; }
-            if (gdmObj['@type']) { delete gdmObj['@type']; }
-            if (gdmObj.status) { delete gdmObj.status; }
-
-            gdmObj.omimId = newOmimId;
-            return this.putRestData('/gdm/' + gdmUuid, gdmObj);
+            var gdm = flatten(gdmObj);
+            gdm.omimId = newOmimId;
+            return this.putRestData('/gdm/' + gdmUuid, gdm);
         }).then(data => {
             this.setState({currOmimId: newOmimId});
         }).catch(e => {
@@ -80,7 +75,7 @@ var RecordHeader = module.exports.RecordHeader = React.createClass({
     render: function() {
         var gdm = this.props.gdm;
 
-        if (gdm && Object.keys(gdm).length > 0 && gdm['@type'][0] === 'gdm') {
+        if (gdm && gdm['@type'][0] === 'gdm') {
             var gene = this.props.gdm.gene;
             var disease = this.props.gdm.disease;
             var mode = this.props.gdm.modeInheritance.match(/^(.*?)(?: \(HP:[0-9]*?\)){0,1}$/)[1];
@@ -96,8 +91,8 @@ var RecordHeader = module.exports.RecordHeader = React.createClass({
                     <div className="container curation-data">
                         <div className="row equal-height">
                             <GeneRecordHeader gene={gene} />
-                            <DiseaseRecordHeader gdm={this.props.gdm} omimId={this.props.omimId} updateOmimId={this.props.updateOmimId} />
-                            <CuratorRecordHeader gdm={this.props.gdm} />
+                            <DiseaseRecordHeader gdm={gdm} omimId={this.props.omimId} updateOmimId={this.props.updateOmimId} />
+                            <CuratorRecordHeader gdm={gdm} />
                         </div>
                     </div>
                 </div>
@@ -149,66 +144,194 @@ var CurationPalette = module.exports.CurationPalette = React.createClass({
     },
 
     render: function() {
+        var gdm = this.props.gdm;
         var annotation = this.props.annotation;
         var session = this.props.session;
         var curatorMatch = annotation && userMatch(annotation.submitted_by, session);
-        var groupUrl = curatorMatch ? ('/group-curation/?gdm=' + this.props.gdm.uuid + '&evidence=' + this.props.annotation.uuid) : null;
-        var familyUrl = curatorMatch ? ('/family-curation/?gdm=' + this.props.gdm.uuid + '&evidence=' + this.props.annotation.uuid) : null;
+        var groupUrl = curatorMatch ? ('/group-curation/?gdm=' + gdm.uuid + '&evidence=' + this.props.annotation.uuid) : null;
+        var familyUrl = curatorMatch ? ('/family-curation/?gdm=' + gdm.uuid + '&evidence=' + this.props.annotation.uuid) : null;
+        var individualUrl = curatorMatch ? ('/individual-curation/?gdm=' + gdm.uuid + '&evidence=' + this.props.annotation.uuid) : null;
+        var groupRenders = [], familyRenders = [], individualRenders = [];
+
+        // Collect up arrays of group, family, and individual curation palette section renders. Start with groups inside the annnotation.
+        if (annotation && annotation.groups) {
+            var groupAnnotationRenders = annotation.groups.map(group => {
+                if (group.familyIncluded) {
+                    // Collect up family renders that are associated with the group, and individuals that are associated with those families.
+                    var familyGroupRenders = group.familyIncluded.map(family => {
+                        if (family.individualIncluded) {
+                            // Collect up individuals that are direct children of families associated with groups
+                            var individualFamilyRenders = family.individualIncluded.map(individual => {
+                                return <div key={individual.uuid}>{renderIndividual(individual, gdm, annotation, curatorMatch)}</div>;
+                            });
+                            individualRenders = individualRenders.concat(individualFamilyRenders);
+                        }
+                        return <div key={family.uuid}>{renderFamily(family, gdm, annotation, curatorMatch)}</div>;
+                    });
+                    familyRenders = familyRenders.concat(familyGroupRenders);
+                }
+                if (group.individualIncluded) {
+                    // Collect up family renders that are associated with the group, and individuals that are associated with those families.
+                    var individualGroupRenders = group.individualIncluded.map(individual => {
+                        return <div key={individual.uuid}>{renderIndividual(individual, gdm, annotation, curatorMatch)}</div>;
+                    });
+                    individualRenders = individualRenders.concat(individualGroupRenders);
+                }
+                return <div key={group.uuid}>{renderGroup(group, gdm, annotation, curatorMatch)}</div>;
+            });
+            groupRenders = groupRenders.concat(groupAnnotationRenders);
+        }
+
+        // Add to the array of family renders the unassociated families, and individuals that associate with them.
+        if (annotation && annotation.families) {
+            var familyAnnotationRenders = annotation.families.map(family => {
+                if (family.individualIncluded) {
+                    // Add to individual renders the individuals that are associated with this family
+                    var individualFamilyRenders = family.individualIncluded.map(individual => {
+                        return <div key={individual.uuid}>{renderIndividual(individual, this.props.gdm, annotation, curatorMatch)}</div>;
+                    });
+                    individualRenders = individualRenders.concat(individualFamilyRenders);
+                }
+                return <div key={family.uuid}>{renderFamily(family, gdm, annotation, curatorMatch)}</div>;
+            });
+            familyRenders = familyRenders.concat(familyAnnotationRenders);
+        }
+
+        // Add to the array of individual renders the unassociated individuals.
+        if (annotation && annotation.individuals) {
+            var individualAnnotationRenders = annotation.individuals.map(individual => {
+                return <div key={individual.uuid}>{renderIndividual(individual, gdm, annotation, curatorMatch)}</div>;
+            });
+            individualRenders = individualRenders.concat(individualAnnotationRenders);
+        }
 
         return (
-            <Panel panelClassName="panel-evidence-groups" title={'Evidence for PMID:' + this.props.annotation.article.pmid}>
-                <Panel title={<CurationPaletteTitles title="Group" url={groupUrl} />} panelClassName="panel-evidence">
-                    {annotation.groups && annotation.groups.map(function(group) {
-                        return (
-                            <div className="panel-evidence-group" key={group.uuid}>
-                                <h5>{group.label}</h5>
-                                <div className="evidence-curation-info">
-                                    {group.submitted_by ?
-                                        <p className="evidence-curation-info">{group.submitted_by.title}</p>
-                                    : null}
-                                    <p>{moment(group.date_created).format('YYYY MMM DD, h:mm a')}</p>
-                                </div>
-                                <a href={'/group/' + group.uuid} target="_blank" title="View group in a new tab">View</a>{curatorMatch ? <span> | <a href={'/group-curation/?gdm=' + this.props.gdm.uuid + '&evidence=' + annotation.uuid + '&group=' + group.uuid} title="Edit this group">Edit</a></span> : null}
-                                {curatorMatch ? <div><a href={familyUrl + '&group=' + group.uuid} title="Add a new family associated with this group">Add family information</a></div> : null}
-                            </div>
-                        );
-                    }.bind(this))}
-                </Panel>
-                <Panel title={<CurationPaletteTitles title="Family" url={familyUrl} />} panelClassName="panel-evidence">
-                    {annotation.families && annotation.families.map(function(family) {
-                        return (
-                            <div className="panel-evidence-group" key={family.uuid}>
-                                <h5>{family.label}</h5>
-                                <div className="evidence-curation-info">
-                                    {family.submitted_by ?
-                                        <p className="evidence-curation-info">{family.submitted_by.title}</p>
-                                    : null}
-                                    <p>{moment(family.date_created).format('YYYY MMM DD, h:mm a')}</p>
-                                </div>
-                                {family.associatedGroups && family.associatedGroups.length ?
-                                    <div>
-                                        <span>Associations: </span>
-                                        {family.associatedGroups.map(function(group, i) {
-                                            return (
-                                                <span key={i}>
-                                                    {i > 0 ? ', ' : ''}
-                                                    <a href={group['@id']} target="_blank" title="View group in a new tab">{group.label}</a>
-                                                </span>
-                                            );
-                                        })}
-                                    </div>
-                                :
-                                    <div>No associations</div>
-                                }
-                                <a href={'/family/' + family.uuid} target="_blank" title="View family in a new tab">View</a>{curatorMatch ? <span> | <a href={'/family-curation/?gdm=' + this.props.gdm.uuid + '&evidence=' + annotation.uuid + '&family=' + family.uuid} title="Edit this family">Edit</a></span> : null}
-                            </div>
-                        );
-                    }.bind(this))}
-                </Panel>
-            </Panel>
+            <div>
+                {annotation ?
+                    <Panel panelClassName="panel-evidence-groups" title={'Evidence for PMID:' + annotation.article.pmid}>
+                        <Panel title={<CurationPaletteTitles title="Group" url={groupUrl} />} panelClassName="panel-evidence">
+                            {groupRenders}
+                        </Panel>
+                        <Panel title={<CurationPaletteTitles title="Family" url={familyUrl} />} panelClassName="panel-evidence">
+                            {familyRenders}
+                        </Panel>
+                        <Panel title={<CurationPaletteTitles title="Individual" url={individualUrl} />} panelClassName="panel-evidence">
+                            {individualRenders}
+                        </Panel>
+                    </Panel>
+                : null}
+            </div>
         );
     }
 });
+
+// Render a family in the curator palette.
+var renderGroup = function(group, gdm, annotation, curatorMatch) {
+    var familyUrl = curatorMatch ? ('/family-curation/?gdm=' + gdm.uuid + '&evidence=' + annotation.uuid) : null;
+    var individualUrl = curatorMatch ? ('/individual-curation/?gdm=' + gdm.uuid + '&evidence=' + annotation.uuid) : null;
+
+    return (
+        <div className="panel-evidence-group" key={group.uuid}>
+            <h5>{group.label}</h5>
+            <div className="evidence-curation-info">
+                {group.submitted_by ?
+                    <p className="evidence-curation-info">{group.submitted_by.title}</p>
+                : null}
+                <p>{moment(group.date_created).format('YYYY MMM DD, h:mm a')}</p>
+            </div>
+            <a href={'/group/' + group.uuid} target="_blank" title="View group in a new tab">View</a>{curatorMatch ? <span> | <a href={'/group-curation/?editsc&gdm=' + gdm.uuid + '&evidence=' + annotation.uuid + '&group=' + group.uuid} title="Edit this group">Edit</a></span> : null}
+            {curatorMatch ? <div><a href={familyUrl + '&group=' + group.uuid} title="Add a new family associated with this group"> Add new Family to this Group</a></div> : null}
+            {curatorMatch ? <div><a href={individualUrl + '&group=' + group.uuid} title="Add a new individual associated with this group"> Add new Individual to this Group</a></div> : null}
+        </div>
+    );
+};
+
+// Render a family in the curator palette.
+var renderFamily = function(family, gdm, annotation, curatorMatch) {
+    var individualUrl = curatorMatch ? ('/individual-curation/?gdm=' + gdm.uuid + '&evidence=' + annotation.uuid) : null;
+
+    return (
+        <div className="panel-evidence-group" key={family.uuid}>
+            <h5>{family.label}</h5>
+            <div className="evidence-curation-info">
+                {family.submitted_by ?
+                    <p className="evidence-curation-info">{family.submitted_by.title}</p>
+                : null}
+                <p>{moment(family.date_created).format('YYYY MMM DD, h:mm a')}</p>
+            </div>
+            {family.associatedGroups && family.associatedGroups.length ?
+                <div>
+                    <span>Associations: </span>
+                    {family.associatedGroups.map(function(group, i) {
+                        return (
+                            <span key={i}>
+                                {i > 0 ? ', ' : ''}
+                                <a href={group['@id']} target="_blank" title="View group in a new tab">{group.label}</a>
+                            </span>
+                        );
+                    })}
+                </div>
+            :
+                <div>No associations</div>
+            }
+            <a href={'/family/' + family.uuid} target="_blank" title="View family in a new tab">View</a>
+            {curatorMatch ? <span> | <a href={'/family-curation/?editsc&gdm=' + gdm.uuid + '&evidence=' + annotation.uuid + '&family=' + family.uuid} title="Edit this family">Edit</a></span> : null}
+            {curatorMatch ? <div><a href={individualUrl + '&family=' + family.uuid} title="Add a new individual associated with this group">Add new Individual to this Family</a></div> : null}
+        </div>
+    );
+};
+
+// Render an individual in the curator palette.
+var renderIndividual = function(individual, gdm, annotation, curatorMatch) {
+    var i = 0;
+
+    return (
+        <div className="panel-evidence-group" key={individual.uuid}>
+            <h5>{individual.label}{individual.proband ? ' [proband]' : ''}</h5>
+            <div className="evidence-curation-info">
+                {individual.submitted_by ?
+                    <p className="evidence-curation-info">{individual.submitted_by.title}</p>
+                : null}
+                <p>{moment(individual.date_created).format('YYYY MMM DD, h:mm a')}</p>
+            </div>
+            {(individual.associatedGroups && individual.associatedGroups.length) || (individual.associatedFamilies && individual.associatedFamilies.length) ?
+                <div>
+                    <span>Associations: </span>
+                    {individual.associatedGroups.map(function(group) {
+                        return (
+                            <span key={group.uuid}>
+                                {i++ > 0 ? ', ' : ''}
+                                <a href={group['@id']} target="_blank" title="View group in a new tab">{group.label}</a>
+                            </span>
+                        );
+                    })}
+                    {individual.associatedFamilies.map(function(family) {
+                        return (
+                            <span key={family.uuid}>
+                                {family.associatedGroups.map(function(group) {
+                                    return (
+                                        <span key={group.uuid}>
+                                            {i++ > 0 ? ', ' : ''}
+                                            <a href={group['@id']} target="_blank" title="View group in a new tab">{group.label}</a>
+                                        </span>
+                                    );
+                                })}
+                                <span key={family.uuid}>
+                                    {i++ > 0 ? ', ' : ''}
+                                    <a href={family['@id']} target="_blank" title="View family in a new tab">{family.label}</a>
+                                </span>
+                            </span>
+                        );
+                    })}
+                </div>
+            :
+                <div>No associations</div>
+            }
+            <a href={'/individual/' + individual.uuid} target="_blank" title="View individual in a new tab">View</a>
+            {curatorMatch ? <span> | <a href={'/individual-curation/?editsc&gdm=' + gdm.uuid + '&evidence=' + annotation.uuid + '&individual=' + individual.uuid} title="Edit this individual">Edit</a></span> : null}
+        </div>
+    );
+};
 
 
 // Title for each section of the curation palette. Contains the title and an Add button.
@@ -275,7 +398,7 @@ var DiseaseRecordHeader = React.createClass({
 
     render: function() {
         var gdm = this.props.gdm;
-        var disease = gdm.disease;
+        var disease = gdm && gdm.disease;
         var addEdit = this.props.omimId ? 'Edit' : 'Add';
 
         return (
@@ -291,9 +414,11 @@ var DiseaseRecordHeader = React.createClass({
                                         {this.props.omimId}
                                     </a>
                                 : null}&nbsp;
-                                <Modal title="Add/Change OMIM ID" wrapperClassName="edit-omim-modal">
-                                    <span>[</span><a modal={<AddOmimIdModal gdm={gdm} closeModal={this.closeModal} updateOmimId={this.props.updateOmimId} />} href="#">{addEdit}</a><span>]</span>
-                                </Modal>
+                                {this.props.updateOmimId ?
+                                    <Modal title="Add/Change OMIM ID" wrapperClassName="edit-omim-modal">
+                                        <span>[</span><a modal={<AddOmimIdModal gdm={gdm} closeModal={this.closeModal} updateOmimId={this.props.updateOmimId} />} href="#">{addEdit}</a><span>]</span>
+                                    </Modal>
+                                : null}
                             </dd>
                         </dl>
                     : null}
@@ -345,7 +470,13 @@ var AddOmimIdModal = React.createClass({
     // nothing happened.
     cancelForm: function(e) {
         e.preventDefault(); e.stopPropagation(); // Don't run through HTML submit handler
-        this.props.closeModal();
+        
+        //only a mouse click on cancel button closes modal
+        //(do not let the enter key [which evaluates to 0 mouse 
+        //clicks] be accepted to close modal)
+        if (e.detail >= 1){
+            this.props.closeModal();
+        }
     },
 
     render: function() {
@@ -374,7 +505,8 @@ var CuratorRecordHeader = React.createClass({
 
     // Return the latest annotation in the given GDM
     findLatestAnnotation: function() {
-        var annotations = this.props.gdm.annotations;
+        var gdm = this.props.gdm;
+        var annotations = gdm && gdm.annotations;
         var latestAnnotation = {};
         var latestTime = 0;
         if (annotations && annotations.length) {
@@ -392,7 +524,7 @@ var CuratorRecordHeader = React.createClass({
 
     render: function() {
         var gdm = this.props.gdm;
-        var owners = gdm.annotations.map(function(annotation) {
+        var owners = gdm && gdm.annotations.map(function(annotation) {
             return annotation.submitted_by;
         });
         var annotationOwners = _.chain(owners).uniq(function(owner) {
@@ -503,10 +635,14 @@ module.exports.capture = {
 
 // Take an object and make a flattened version ready for writing.
 // SCHEMA: This might need to change when the schema changes.
-module.exports.flatten = function(obj) {
+var flatten = module.exports.flatten = function(obj) {
     var flat;
 
     switch(obj['@type'][0]) {
+        case 'gdm':
+            flat = flattenGdm(obj);
+            break;
+
         case 'annotation':
             flat = flattenAnnotation(obj);
             break;
@@ -519,29 +655,38 @@ module.exports.flatten = function(obj) {
             flat = flattenFamily(obj);
             break;
 
+        case 'individual':
+            flat = flattenIndividual(obj);
+            break;
+
         default:
             break;
     }
 
-    // Delete fields we can't write
-    if (flat) {
-        delete flat['@id'];
-        delete flat['@type'];
-        delete flat.actions;
-        delete flat.audit;
-        delete flat.uuid;
-        delete flat.submitted_by;
-        delete flat.date_created;
-    }
     return flat;
 };
 
 
+// Clone the simple properties of the given object and return them in a new object.
+// An array of the names of the properties to copy in the 'props' parameter.
+// Simple properties include strings, booleans, integers, arrays of those things,
+// and objects comprising simple properties.
 
+function cloneSimpleProps(obj, props) {
+    var dup = {};
+
+    props.forEach(function(prop) {
+        dup[prop] = obj[prop];
+    });
+    return dup;
+}
+
+
+var annotationSimpleProps = ["active", "date_created"];
 
 function flattenAnnotation(annotation) {
     // First copy everything before fixing the special properties
-    var flat = _.clone(annotation);
+    var flat = cloneSimpleProps(annotation, annotationSimpleProps);
 
     flat.article = annotation.article['@id'];
 
@@ -550,8 +695,6 @@ function flattenAnnotation(annotation) {
         flat.groups = annotation.groups.map(function(group) {
             return group['@id'];
         });
-    } else {
-        delete flat.groups;
     }
 
     // Flatten families
@@ -559,8 +702,6 @@ function flattenAnnotation(annotation) {
         flat.families = annotation.families.map(function(family) {
             return family['@id'];
         });
-    } else {
-        delete flat.families;
     }
 
     // Flatten individuals
@@ -568,8 +709,6 @@ function flattenAnnotation(annotation) {
         flat.individuals = annotation.individuals.map(function(individual) {
             return individual['@id'];
         });
-    } else {
-        delete flat.individuals;
     }
 
     // Flatten experimentalData
@@ -577,93 +716,91 @@ function flattenAnnotation(annotation) {
         flat.experimentalData = annotation.experimentalData.map(function(data) {
             return data['@id'];
         });
-    } else {
-        delete flat.experimentalData;
     }
 
     return flat;
 }
 
+
+var groupSimpleProps = ["label", "hpoIdInDiagnosis", "termsInDiagnosis", "hpoIdInElimination", "termsInElimination", "numberOfMale", "numberOfFemale", "countryOfOrigin",
+    "ethnicity", "race", "ageRangeType", "ageRangeFrom", "ageRangeTo", "ageRangeUnit", "totalNumberIndividuals", "numberOfIndividualsWithFamilyInformation",
+    "numberOfIndividualsWithoutFamilyInformation", "numberOfIndividualsWithVariantInCuratedGene", "numberOfIndividualsWithoutVariantInCuratedGene",
+    "numberOfIndividualsWithVariantInOtherGene", "method", "additionalInformation", "date_created"
+];
+
 function flattenGroup(group) {
-    // First copy everything before fixing the special properties
-    var flat = _.clone(group);
+    // First copy simple properties before fixing the special properties
+    var flat = cloneSimpleProps(group, groupSimpleProps);
 
-    // Flatten diseases
-    if (group.commonDiagnosis && group.commonDiagnosis.length) {
-        flat.commonDiagnosis = group.commonDiagnosis.map(function(disease) {
-            return disease['@id'];
-        });
-    } else {
-        delete flat.commonDiagnosis;
-    }
+    flat.commonDiagnosis = group.commonDiagnosis.map(function(disease) {
+        return disease['@id'];
+    });
 
-    // Flatten otherGenes
     if (group.otherGenes && group.otherGenes.length) {
         flat.otherGenes = group.otherGenes.map(function(gene) {
             return gene['@id'];
         });
-    } else {
-        delete flat.otherGenes;
     }
 
-    // Flatten other PMIDs
     if (group.otherPMIDs && group.otherPMIDs.length) {
         flat.otherPMIDs = group.otherPMIDs.map(function(article) {
             return article['@id'];
         });
-    } else {
-        delete flat.otherPMIDs;
     }
 
-    // Flatten included families
+    if (group.statistic) {
+        flat.statistic = group.statistic['@id'];
+    }
+
     if (group.familyIncluded && group.familyIncluded.length) {
         flat.familyIncluded = group.familyIncluded.map(function(family) {
             return family['@id'];
         });
-    } else {
-        delete flat.familyIncluded;
     }
 
-    // Flatten included individuals
     if (group.individualIncluded && group.individualIncluded.length) {
         flat.individualIncluded = group.individualIncluded.map(function(individual) {
             return individual['@id'];
         });
-    } else {
-        delete flat.individualIncluded;
     }
 
-    // Flatten other linked objects
-    if (group.statistic) {
-        flat.statistic = group.statistic['@id'];
-    }
-    if (group.statistic) {
+    if (group.control) {
         flat.control = group.control['@id'];
     }
 
     return flat;
 }
 
+
+var familySimpleProps = ["label", "hpoIdInDiagnosis", "termsInDiagnosis", "hpoIdInElimination", "termsInElimination", "numberOfMale", "numberOfFemale", "countryOfOrigin",
+    "ethnicity", "race", "ageRangeType", "ageRangeFrom", "ageRangeTo", "ageRangeUnit", "method", "additionalInformation", "date_created"
+];
+var segregationSimpleProps = ["pedigreeDescription", "pedigreeSize", "numberOfGenerationInPedigree", "consanguineousFamily", "numberOfCases", "deNovoType",
+    "numberOfParentsUnaffectedCarriers", "numberOfAffectedAlleles", "numberOfAffectedWithOneVariant", "numberOfAffectedWithTwoVariants", "numberOfUnaffectedCarriers",
+    "numberOfUnaffectedIndividuals", "probandAssociatedWithBoth", "additionalInformation"];
+
 function flattenFamily(family) {
     // First copy everything before fixing the special properties
-    var flat = _.clone(family);
+    var flat = cloneSimpleProps(family, familySimpleProps);
 
     // Flatten diseases
-    if (family.commonDiagnosis && family.commonDiagnosis.length) {
-        flat.commonDiagnosis = family.commonDiagnosis.map(function(disease) {
-            return disease['@id'];
-        });
-    } else {
-        delete flat.commonDiagnosis;
-    }
+    flat.commonDiagnosis = family.commonDiagnosis.map(function(disease) {
+        return disease['@id'];
+    });
 
     // Flatten segregation variants
-    if (family.segregation && family.segregation.variants && family.segregation.variants.length) {
-        flat.segregation.variants = family.segregation.variants.map(function(variant) {
-            return variant['@id'];
-        });
-    } else {
-        delete flat.segregation.variants;
+    if (family.segregation) {
+        flat.segregation = cloneSimpleProps(family.segregation, segregationSimpleProps);
+        if (family.segregation.variants && family.segregation.variants.length) {
+            flat.segregation.variants = family.segregation.variants.map(function(variant) {
+                return variant['@id'];
+            });
+        }
+        if (family.segregation.assessments && family.segregation.assessments.length) {
+            flat.segregation.assessments = family.segregation.assessments.map(function(assessment) {
+                return assessment['@id'];
+            });
+        }
     }
 
     // Flatten other PMIDs
@@ -671,8 +808,6 @@ function flattenFamily(family) {
         flat.otherPMIDs = family.otherPMIDs.map(function(article) {
             return article['@id'];
         });
-    } else {
-        delete flat.otherPMIDs;
     }
 
     // Flatten included individuals
@@ -680,11 +815,126 @@ function flattenFamily(family) {
         flat.individualIncluded = family.individualIncluded.map(function(individual) {
             return individual['@id'];
         });
-    } else {
-        delete flat.individualIncluded;
     }
-
-    delete flat.associatedGroups;
 
     return flat;
 }
+
+
+var individualSimpleProps = ["label", "sex", "hpoIdInDiagnosis", "termsInDiagnosis", "hpoIdInElimination", "termsInElimination", "countryOfOrigin", "ethnicity",
+    "race", "ageType", "ageValue", "ageUnit", "method", "additionalInformation", "proband", "date_created"
+];
+
+function flattenIndividual(individual) {
+    // First copy everything before fixing the special properties
+    var flat = cloneSimpleProps(individual, individualSimpleProps);
+
+    // Flatten diseases
+    flat.diagnosis = individual.diagnosis.map(function(disease) {
+        return disease['@id'];
+    });
+
+    // Flatten other PMIDs
+    if (individual.otherPMIDs && individual.otherPMIDs.length) {
+        flat.otherPMIDs = individual.otherPMIDs.map(function(article) {
+            return article['@id'];
+        });
+    }
+
+    // Flatten variants
+    if (individual.variants && individual.variants.length) {
+        flat.variants = individual.variants.map(function(variant) {
+            return variant['@id'];
+        });
+    }
+
+    return flat;
+}
+
+
+var gdmSimpleProps = [
+    "date_created", "modeInheritance", "omimId", "draftClassification", "finalClassification", "active"
+];
+var variantPathogenicSimpleProps = [
+    "consistentWithDiseaseMechanism", "withinFunctionalDomain", "frequencySupportPathogenicity", "previouslyReported", "denovoType",
+    "intransWithAnotherVariant", "supportingSegregation", "supportingStatistic", "SupportingFunctional", "comment"
+];
+
+function flattenGdm(gdm) {
+    // First copy all the simple properties
+    var flat = cloneSimpleProps(gdm, gdmSimpleProps);
+
+    // Flatten genes
+    if (gdm.gene) {
+        flat.gene = gdm.gene['@id'];
+    }
+
+    // Flatten diseases
+    if (gdm.disease) {
+        flat.disease = gdm.disease['@id'];
+    }
+
+    // Flatten annotations
+    if (gdm.annotations && gdm.annotations.length) {
+        flat.annotations = gdm.annotations.map(function(annotation) {
+            return annotation['@id'];
+        });
+    }
+
+    // Flatten variant pathogenics
+    if (gdm.variantPathogenic && gdm.variantPathogenic.length) {
+        flat.variantPathogenic = gdm.variantPathogenic.map(function(vp) {
+            var flat_vp = cloneSimpleProps(vp, variantPathogenicSimpleProps);
+            if (vp.variant) {
+                flat_vp.variant = vp.variant['@id'];
+            }
+            if (vp.assessments && vp.assessments.length) {
+                flat_vp.assessments = vp.assessments.map(function(assessment) {
+                    return assessment['@id'];
+                });
+            }
+            return flat_vp;
+        });
+    }
+
+    // Flatten provisional classifications
+    if (gdm.provisionalClassifications && gdm.provisionalClassifications.length) {
+        flat.provisionalClassifications = gdm.provisionalClassifications.map(function(classification) {
+            return classification['@id'];
+        });
+    }
+
+    return flat;
+}
+
+// Given an array of group or families in 'objList', render a list of Orphanet IDs for all diseases in those
+// groups or families.
+var renderOrphanets = module.exports.renderOrphanets = function(objList, title) {
+    return (
+        <div>
+            {objList && objList.length ?
+                <div>
+                    {objList.map(function(obj) {
+                        return (
+                            <div key={obj.uuid} className="form-group">
+                                <div className="col-sm-5">
+                                    <strong className="pull-right">Orphanet Diseases Associated with {title}:</strong>
+                                </div>
+                                <div className="col-sm-7">
+                                    {obj.commonDiagnosis.map(function(disease, i) {
+                                        return (
+                                            <span key={disease.orphaNumber}>
+                                                {i > 0 ? ', ' : ''}
+                                                {'ORPHA' + disease.orphaNumber}
+                                            </span>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            : null}
+        </div>
+    );
+};

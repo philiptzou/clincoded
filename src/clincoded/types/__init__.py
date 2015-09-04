@@ -11,6 +11,7 @@ from .base import (
     Item,
     paths_filtered_by_status,
 )
+import json
 
 
 def includeme(config):
@@ -98,6 +99,7 @@ class Article(Item):
         'submitted_by'
     ]
 
+
 @collection(
     name='variants',
     unique_key='variant:uuid',
@@ -168,6 +170,7 @@ class Variant(Item):
         return paths_filtered_by_status(request, associatedExperimental)
 
 
+
 @collection(
     name='gdm',
     unique_key='gdm:uuid',
@@ -183,7 +186,14 @@ class Gdm(Item):
         'gene',
         'disease',
         'submitted_by',
-        'variantPathogenic.variant',
+        'variantPathogenicity',
+        'variantPathogenicity.submitted_by',
+        'variantPathogenicity.variant',
+        'variantPathogenicity.variant.submitted_by',
+        'variantPathogenicity.assessments',
+        'variantPathogenicity.assessments.submitted_by',
+        'provisionalClassifications',
+        'provisionalClassifications.submitted_by',
         'annotations',
         'annotations.article',
         'annotations.article.submitted_by',
@@ -197,13 +207,19 @@ class Gdm(Item):
         #'annotations.groups.statistic',
         #'annotations.groups.statistic.variants',
         'annotations.groups.familyIncluded',
+        'annotations.groups.familyIncluded.associatedGroups',
         'annotations.groups.familyIncluded.commonDiagnosis',
         'annotations.groups.familyIncluded.submitted_by',
         'annotations.groups.familyIncluded.otherPMIDs',
         'annotations.groups.familyIncluded.otherPMIDs.submitted_by',
         'annotations.groups.familyIncluded.segregation.variants',
         'annotations.groups.familyIncluded.segregation.variants.submitted_by',
+        'annotations.groups.familyIncluded.segregation.assessments',
+        'annotations.groups.familyIncluded.segregation.assessments.submitted_by',
         'annotations.groups.familyIncluded.individualIncluded',
+        'annotations.groups.familyIncluded.individualIncluded.associatedGroups',
+        'annotations.groups.familyIncluded.individualIncluded.associatedFamilies',
+        'annotations.groups.familyIncluded.individualIncluded.associatedFamilies.associatedGroups',
         'annotations.groups.familyIncluded.individualIncluded.diagnosis',
         'annotations.groups.familyIncluded.individualIncluded.submitted_by',
         'annotations.groups.familyIncluded.individualIncluded.variants',
@@ -211,6 +227,7 @@ class Gdm(Item):
         'annotations.groups.familyIncluded.individualIncluded.otherPMIDs',
         'annotations.groups.familyIncluded.individualIncluded.otherPMIDs.submitted_by',
         'annotations.groups.individualIncluded',
+        'annotations.groups.individualIncluded.associatedGroups',
         'annotations.groups.individualIncluded.diagnosis',
         'annotations.groups.individualIncluded.submitted_by',
         'annotations.groups.individualIncluded.variants',
@@ -226,7 +243,12 @@ class Gdm(Item):
         'annotations.families.otherPMIDs.submitted_by',
         'annotations.families.segregation.variants',
         'annotations.families.segregation.variants.submitted_by',
+        'annotations.families.segregation.assessments',
+        'annotations.families.segregation.assessments.submitted_by',
         'annotations.families.individualIncluded',
+        'annotations.families.individualIncluded.associatedGroups',
+        'annotations.families.individualIncluded.associatedFamilies',
+        'annotations.families.individualIncluded.associatedFamilies.associatedGroups',
         'annotations.families.individualIncluded.diagnosis',
         'annotations.families.individualIncluded.submitted_by',
         'annotations.families.individualIncluded.variants',
@@ -234,6 +256,9 @@ class Gdm(Item):
         'annotations.families.individualIncluded.otherPMIDs',
         'annotations.families.individualIncluded.otherPMIDs.submitted_by',
         'annotations.individuals',
+        'annotations.individuals.associatedGroups',
+        'annotations.individuals.associatedFamilies',
+        'annotations.individuals.associatedFamilies.associatedGroups',
         'annotations.individuals.diagnosis',
         'annotations.individuals.submitted_by',
         'annotations.individuals.variants',
@@ -244,7 +269,23 @@ class Gdm(Item):
         'annotations.experimentalData.submitted_by',
         'annotations.experimentalData.variants',
         'annotations.experimentalData.variants.submitted_by',
-        'annotations.experimentalData.biochemicalFunction.geneWithSameFunctionSameDisease.genes'
+        'annotations.experimentalData.biochemicalFunction.geneWithSameFunctionSameDisease.genes',
+        'annotations.experimentalData.biochemicalFunction.geneWithSameFunctionSameDisease.assessments',
+        'annotations.experimentalData.biochemicalFunction.geneWithSameFunctionSameDisease.assessments.submitted_by',
+        'annotations.experimentalData.biochemicalFunction.geneFunctionConsistentWithPhenotype.assessments',
+        'annotations.experimentalData.biochemicalFunction.geneFunctionConsistentWithPhenotype.assessments.submitted_by',
+        'annotations.experimentalData.proteinIneractions.assessments',
+        'annotations.experimentalData.proteinIneractions.assessments.submitted_by',
+        'annotations.experimentalData.expression.normalExpression.assessments',
+        'annotations.experimentalData.expression.normalExpression.assessments.submitted_by',
+        'annotations.experimentalData.expression.alteredExpression.assessments',
+        'annotations.experimentalData.expression.alteredExpression.assessments.submitted_by',
+        'annotations.experimentalData.functionalAleration.assessments',
+        'annotations.experimentalData.functionalAleration.assessments.submitted_by',
+        'annotations.experimentalData.modelSystems.assessments',
+        'annotations.experimentalData.modelSystems.assessments.submitted_by',
+        'annotations.experimentalData.rescue.assessments',
+        'annotations.experimentalData.rescue.assessments.submitted_by'
     ]
 
     @calculated_property(schema={
@@ -262,6 +303,43 @@ class Gdm(Item):
             return 'In Progress'
         else:
             return 'Created'
+
+    @calculated_property(schema={
+        "title": "Number of Articles",
+        "type": "string",
+    })
+    def number_article(seft, annotations):
+        if len(annotations) > 0:
+            return str(len(annotations))
+        return ""
+
+    @calculated_property(schema={
+        "title": "Number of Pathogenicity",
+        "type": "string",
+    })
+    def number_pathogenicity(seft, variantPathogenicity):
+        if len(variantPathogenicity) > 0:
+            return str(len(variantPathogenicity))
+        return ""
+
+    @calculated_property(schema={
+        "title": "Number of Provisional",
+        "type": "string",
+    })
+    def number_provisional(seft, provisionalClassifications):
+        if len(provisionalClassifications) > 0:
+            return str(len(provisionalClassifications))
+        return ""
+
+    @calculated_property(schema={
+        "title": "GDM",
+        "type": "string",
+    })
+    def gdm_title(seft, gene, disease, modeCode):
+        gene_symbol = gene.replace('/genes/', '').replace('/', '')
+        orpha_id = disease.replace('/diseases/', '').replace('/', '')
+        return gene_symbol + '-' + orpha_id + '-' + modeCode
+
 
 @collection(
     name='evidence',
@@ -290,6 +368,8 @@ class Annotation(Item):
         'groups.familyIncluded.otherPMIDs.submitted_by',
         'groups.familyIncluded.segregation.variants',
         'groups.familyIncluded.segregation.variants.submitted_by',
+        'groups.familyIncluded.segregation.assessments',
+        'groups.familyIncluded.segregation.assessments.submitted_by',
         'groups.familyIncluded.individualIncluded',
         'groups.familyIncluded.individualIncluded.diagnosis',
         'groups.familyIncluded.individualIncluded.submitted_by',
@@ -313,6 +393,8 @@ class Annotation(Item):
         'families.otherPMIDs.submitted_by',
         'families.segregation.variants',
         'families.segregation.variants.submitted_by',
+        'families.segregation.assessments',
+        'families.segregation.assessments.submitted_by',
         'families.individualIncluded',
         'families.individualIncluded.diagnosis',
         'families.individualIncluded.submitted_by',
@@ -321,6 +403,8 @@ class Annotation(Item):
         'families.individualIncluded.otherPMIDs',
         'families.individualIncluded.otherPMIDs.submitted_by',
         'individuals',
+        'individuals.associatedGroups',
+        'individuals.associatedFamilies',
         'individuals.diagnosis',
         'individuals.submitted_by',
         'individuals.variants',
@@ -331,8 +415,61 @@ class Annotation(Item):
         'experimentalData.submitted_by',
         'experimentalData.variants',
         'experimentalData.variants.submitted_by',
-        'experimentalData.biochemicalFunction.geneWithSameFunctionSameDisease.genes'
+        'experimentalData.biochemicalFunction.geneWithSameFunctionSameDisease.genes',
+        'experimentalData.biochemicalFunction.geneWithSameFunctionSameDisease.assessments',
+        'experimentalData.biochemicalFunction.geneWithSameFunctionSameDisease.assessments.submitted_by',
+        'experimentalData.biochemicalFunction.geneFunctionConsistentWithPhenotype.assessments',
+        'experimentalData.biochemicalFunction.geneFunctionConsistentWithPhenotype.assessments.submitted_by',
+        'experimentalData.proteinIneractions.assessments',
+        'experimentalData.proteinIneractions.assessments.submitted_by',
+        'experimentalData.expression.normalExpression.assessments',
+        'experimentalData.expression.normalExpression.assessments.submitted_by',
+        'experimentalData.expression.alteredExpression.assessments',
+        'experimentalData.expression.alteredExpression.assessments.submitted_by',
+        'experimentalData.functionalAleration.assessments',
+        'experimentalData.functionalAleration.assessments.submitted_by',
+        'experimentalData.modelSystems.assessments',
+        'experimentalData.modelSystems.assessments.submitted_by',
+        'experimentalData.rescue.assessments',
+        'experimentalData.rescue.assessments.submitted_by'
     ]
+
+    @calculated_property(schema={
+        "title": "Number of Group",
+        "type": "string",
+    })
+    def number_group(selft, groups):
+        if len(groups) > 0:
+            return len(groups)
+        return ""
+
+    @calculated_property(schema={
+        "title": "Number of Family",
+        "type": "string",
+    })
+    def number_family(selft, families):
+        if len(families) > 0:
+            return len(families)
+        return ""
+
+    @calculated_property(schema={
+        "title": "Number of Provisioinal Individual",
+        "type": "string",
+    })
+    def number_individual(selft, individuals):
+        if len(individuals) > 0:
+            return len(individuals)
+        return ""
+
+    @calculated_property(schema={
+        "title": "Number of Experimental",
+        "type": "string",
+    })
+    def number_experimental(selft, experimentalData):
+        if len(experimentalData) > 0:
+            return len(experimentalData)
+        return ""
+
 
 @collection(
     name='groups',
@@ -359,6 +496,8 @@ class Group(Item):
         'familyIncluded.otherPMIDs.submitted_by',
         'familyIncluded.segregation.variants',
         'familyIncluded.segregation.variants.submitted_by',
+        'familyIncluded.segregation.assessments',
+        'familyIncluded.segregation.assessments.submitted_by',
         'familyIncluded.individualIncluded',
         'familyIncluded.individualIncluded.diagnosis',
         'familyIncluded.individualIncluded.submitted_by',
@@ -393,13 +532,19 @@ class Family(Item):
         'submitted_by',
         'segregation.variants',
         'segregation.variants.submitted_by',
+        'segregation.assessments',
+        'segregation.assessments.submitted_by',
         'otherPMIDs',
         'otherPMIDs.submitted_by',
         'individualIncluded',
         'individualIncluded.diagnosis',
+        'individualIncluded.associatedFamilies',
+        'individualIncluded.associatedGroups',
+        'individualIncluded.otherPMIDs',
         'individualIncluded.submitted_by',
         'individualIncluded.variants',
         'associatedGroups',
+        'associatedGroups.commonDiagnosis',
         'individualIncluded.variants.submitted_by',
     ]
     rev = {
@@ -437,7 +582,15 @@ class Individual(Item):
         'otherPMIDs',
         'otherPMIDs.submitted_by',
         'associatedGroups',
+<<<<<<< HEAD
         'associatedFamilies',
+=======
+        'associatedGroups.commonDiagnosis',
+        'associatedFamilies',
+        'associatedFamilies.associatedGroups',
+        'associatedFamilies.commonDiagnosis',
+        'associatedFamilies.individualIncluded'
+>>>>>>> dev
     ]
     rev = {
         'associatedGroups': ('group', 'individualIncluded'),
@@ -445,7 +598,11 @@ class Individual(Item):
     }
 
     @calculated_property(schema={
+<<<<<<< HEAD
         "title": "Associated Groups",
+=======
+        "title": "Associated groups",
+>>>>>>> dev
         "type": "array",
         "items": {
             "type": ['string', 'object'],
@@ -456,7 +613,11 @@ class Individual(Item):
         return paths_filtered_by_status(request, associatedGroups)
 
     @calculated_property(schema={
+<<<<<<< HEAD
         "title": "Associated Families",
+=======
+        "title": "Associated families",
+>>>>>>> dev
         "type": "array",
         "items": {
             "type": ['string', 'object'],
@@ -482,8 +643,118 @@ class Experimental(Item):
         'submitted_by',
         'variants',
         'variants.submitted_by',
-        'biochemicalFunction.geneWithSameFunctionSameDisease.genes'
+        'biochemicalFunction.geneWithSameFunctionSameDisease.genes',
+        'biochemicalFunction.geneWithSameFunctionSameDisease.assessments',
+        'biochemicalFunction.geneWithSameFunctionSameDisease.assessments.submitted_by',
+        'biochemicalFunction.geneFunctionConsistentWithPhenotype.assessments',
+        'biochemicalFunction.geneFunctionConsistentWithPhenotype.assessments.submitted_by',
+        'proteinIneractions.assessments',
+        'proteinIneractions.assessments.submitted_by',
+        'expression.normalExpression.assessments',
+        'expression.normalExpression.assessments.submitted_by',
+        'expression.alteredExpression.assessments',
+        'expression.alteredExpression.assessments.submitted_by',
+        'functionalAleration.assessments',
+        'functionalAleration.assessments.submitted_by',
+        'modelSystems.assessments',
+        'modelSystems.assessments.submitted_by',
+        'rescue.assessments',
+        'rescue.assessments.submitted_by'
     ]
+
+
+@collection(
+    name='pathogenicity',
+    unique_key='pathogenicity:uuid',
+    properties={
+        'title': 'Pathogenicity',
+        'description': 'List of variant pathogenicity',
+    })
+class Pathogenicity(Item):
+    item_type = 'pathogenicity'
+    schema = load_schema('clincoded:schemas/pathogenicity.json')
+    name_key = 'uuid'
+    embedded = [
+        'submitted_by',
+        'variant',
+        'assessments',
+        'assessments.submitted_by',
+        'associatedGdm',
+    ]
+    rev = {
+        'associatedGdm': ('gdm', 'variantPathogenicity'),
+    }
+
+    @calculated_property(schema={
+        "title": "Associated GDM",
+        "type": "object",
+        "linkFrom": "gdm.variantPathogenicity"
+    })
+    def associatedGdm(self, request, associatedGdm):
+        return paths_filtered_by_status(request, associatedGdm)
+
+    @calculated_property(schema={
+        "title": "Number of Assessment",
+        "type": "integer"
+    })
+    def numberOfAssessmnet(self, assessments):
+        return len(assessments)
+
+
+@collection(
+    name='assessments',
+    unique_key='assessment:uuid',
+    properties={
+        'title': 'Assessments',
+        'description': 'List of assessments',
+    })
+class Assessment(Item):
+    item_type = 'assessment'
+    schema = load_schema('clincoded:schemas/assessment.json')
+    name_key = 'uuid'
+    embedded = [
+        'submitted_by',
+        'pathogenicity_assessed',
+    ]
+    rev = {
+        'pathogenicity_assessed': ('pathogenicity', 'assessments'),
+    }
+
+    @calculated_property(schema={
+        "title": "Pathogenicity Assessed",
+        "type": ["string", "object"],
+        "linkFrom": "pathogenicity.assessments"
+    })
+    def pathogenicity_assessed(self, request, pathogenicity_assessed):
+        return paths_filtered_by_status(request, pathogenicity_assessed)
+
+
+@collection(
+    name='provisional',
+    unique_key='provisionalClassification:uuid',
+    properties={
+        'title': 'Provisional Classifications',
+        'description': 'List of provisional classifications',
+    })
+class Provisional(Item):
+    item_type = 'provisionalClassification'
+    schema = load_schema('clincoded:schemas/provisionalClassification.json')
+    name_key = 'uuid'
+    embedded = [
+        'submitted_by',
+        'gdm_associated',
+    ]
+    rev = {
+        'gdm_associated': ('gdm', 'provisionalClassifications'),
+    }
+
+    @calculated_property(schema={
+        "title": "GDM Associated",
+        "type": ["string", "object"],
+        "linkFrom": "gdm.provisionalClassifications"
+    })
+    def gdm_associated(self, request, gdm_associated):
+        return paths_filtered_by_status(request, gdm_associated)
 ### end of new collections for curation data
 
 

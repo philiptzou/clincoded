@@ -21,6 +21,7 @@ ORDER = [
     'orphaPhenotype',
     #'disease',
     'article',
+    'assessment',
     'variant',
     'individual',
     'family',
@@ -29,6 +30,8 @@ ORDER = [
     'group',
     'experimental',
     'annotation',
+    'pathogenicity',
+    'provisionalClassification',
     'gdm',
     'curator_page', # keep at bottom so it can load other type data
 ]

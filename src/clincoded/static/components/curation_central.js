@@ -33,7 +33,7 @@ var CurationCentral = React.createClass({
     getInitialState: function() {
         return {
             currPmid: queryKeyValue('pmid', this.props.href),
-            currGdm: {}
+            currGdm: null
         };
     },
 
@@ -42,7 +42,7 @@ var CurationCentral = React.createClass({
         if (pmid !== undefined) {
             var gdm = this.state.currGdm;
 
-            if (Object.keys(gdm).length) {
+            if (gdm) {
                 // Find the annotation in the GDM matching the given pmid
                 var currAnnotation = _(gdm.annotations).find(annotation => {
                     return annotation.article.pmid === pmid;
@@ -52,7 +52,7 @@ var CurationCentral = React.createClass({
                     this.setState({currPmid: currAnnotation.article.pmid});
                 }
             }
-            if (this.state.currGdm && Object.keys(this.state.currGdm).length) {
+            if (this.state.currGdm) {
                 window.history.replaceState(window.state, '', '/curation-central/?gdm=' + this.state.currGdm.uuid + '&pmid=' + pmid);
             }
         }
@@ -92,18 +92,16 @@ var CurationCentral = React.createClass({
         this.postRestData('/evidence/', newAnnotationObj).then(data => {
             // Save the new annotation; fetch the currently displayed GDM as an object without its embedded
             // objects; basically the object as it exists in the DB. We'll update that and write it back to the DB.
-            newAnnotation = data['@graph'][0];
-            return this.getRestData('/gdm/' + this.state.currGdm.uuid + '/?frame=object');
-        }).then(gdmObj => {
-            // We'll get 422 (Unprocessible entity) if we PUT any of these fields:
-            delete gdmObj.uuid;
-            delete gdmObj['@id'];
-            delete gdmObj['@type'];
-            delete gdmObj.status;
+            return (data['@graph'][0]);
+        }).then(newAnnotation => {
+            var gdmObj = curator.flatten(currGdm);
 
             // Add our new annotation reference to the array of annotations in the GDM.
-            gdmObj.annotations.push('/evidence/' + newAnnotation.uuid + '/');
-            return this.putRestData('/gdm/' + this.state.currGdm.uuid, gdmObj);
+            if (!gdmObj.annotations) {
+                gdmObj.annotations = [];
+            }
+            gdmObj.annotations.push(newAnnotation['@id']);
+            return this.putRestData('/gdm/' + currGdm.uuid, gdmObj);
         }).then(data => {
             // Retrieve the updated GDM and set it as the new state GDM to force a rerendering.
             this.getGdm(data['@graph'][0].uuid, article.pmid);
@@ -115,7 +113,7 @@ var CurationCentral = React.createClass({
         var pmid = this.state.currPmid;
 
         // Find the GDM's annotation for the article with the curren PMID
-        var annotation = gdm.annotations && gdm.annotations.length && _(gdm.annotations).find(function(annotation) {
+        var annotation = gdm && gdm.annotations && gdm.annotations.length && _(gdm.annotations).find(function(annotation) {
             return pmid === annotation.article.pmid;
         });
         var currArticle = annotation ? annotation.article : null;
@@ -126,8 +124,8 @@ var CurationCentral = React.createClass({
                 <div className="container">
                     <div className="row curation-content">
                         <div className="col-md-3">
-                            <PmidSelectionList annotations={gdm.annotations} currPmid={pmid} currPmidChange={this.currPmidChange}
-                                    protocol={this.props.href_url.protocol} updateGdmArticles={this.updateGdmArticles} />
+                            <PmidSelectionList annotations={gdm && gdm.annotations} currPmid={pmid} currPmidChange={this.currPmidChange}
+                                    protocol={this.props.href_url.protocol} updateGdmArticles={this.updateGdmArticles} currGdm={gdm} />
                         </div>
                         <div className="col-md-6">
                             {currArticle ?
@@ -200,7 +198,7 @@ var PmidSelectionList = React.createClass({
             <div className="pmid-selection-wrapper">
                 <div className="pmid-selection-add">
                     <Modal title='Add new PubMed Article'>
-                        <button className="btn btn-primary pmid-selection-add-btn" modal={<AddPmidModal protocol={this.props.protocol} closeModal={this.closeModal} updateGdmArticles={this.props.updateGdmArticles} />}>
+                        <button className="btn btn-primary pmid-selection-add-btn" modal={<AddPmidModal protocol={this.props.protocol} closeModal={this.closeModal} updateGdmArticles={this.props.updateGdmArticles} currGdm={this.props.currGdm} />}>
                             Add New PMID(s)
                         </button>
                     </Modal>
@@ -250,14 +248,33 @@ var AddPmidModal = React.createClass({
     validateForm: function() {
         // Start with default validation
         var valid = this.validateDefault();
+        var formInput = this.getFormValue('pmid');
 
-        // Valid if the field has only 10 or fewer digits
+        // valid if input isn't zero-filled or is not longer than 8 characters
+        if (valid && (formInput.match(/^0+$/) || formInput.length > 8)) {
+            valid = false;
+            this.setFormErrors('pmid', 'This PMID does not exist');
+        }
+        // valid if input isn't zero-leading
+        if (valid && formInput.match(/^0+/)) {
+            valid = false;
+            this.setFormErrors('pmid', 'Please re-enter PMID without any leading 0\'s');
+        }
+        // valid if the input only has numbers
+        if (valid && !formInput.match(/^[0-9]*$/)) {
+            valid = false;
+            this.setFormErrors('pmid', 'Only numbers allowed');
+        }
+        // valid if input isn't already associated with GDM
         if (valid) {
-            valid = this.getFormValue('pmid').match(/^[0-9]{1,10}$/i);
-            if (!valid) {
-                this.setFormErrors('pmid', 'Only numbers allowed');
+            for (var i = 0; i < this.props.currGdm.annotations.length; i++) {
+                if (this.props.currGdm.annotations[i].article.pmid == formInput) {
+                    valid = false;
+                    this.setFormErrors('pmid', 'This article has already been associated with this Gene-Disease Record');
+                }
             }
         }
+
         return valid;
     },
 
@@ -277,6 +294,8 @@ var AddPmidModal = React.createClass({
                 // PubMed article not in our DB; go out to PubMed itself to retrieve it as XML
                 return this.getRestDataXml(external_url_map['PubMedSearch'] + enteredPmid).then(xml => {
                     var newArticle = parsePubmed(xml, enteredPmid);
+                    // if the PubMed article for this PMID doesn't exist, display an error
+                    if (newArticle.length === undefined) this.setFormErrors('pmid', 'This PMID does not exist');
                     return this.postRestData('/articles/', newArticle).then(data => {
                         return Promise.resolve(data['@graph'][0]);
                     });
@@ -294,20 +313,27 @@ var AddPmidModal = React.createClass({
     // nothing happened.
     cancelForm: function(e) {
         e.preventDefault(); e.stopPropagation(); // Don't run through HTML submit handler
-        this.props.closeModal();
+        
+        //only a mouse click on cancel button closes modal
+        //(do not let the enter key [which evaluates to 0 mouse 
+        //clicks] be accepted to close modal)
+        if (e.detail >= 1){
+            this.props.closeModal();
+        }
     },
 
     render: function() {
         return (
             <Form submitHandler={this.submitForm} formClassName="form-std">
                 <div className="modal-body">
-                    <Input type="text" ref="pmid" label="Enter a PubMed ID"
+                    <Input type="text" ref="pmid" label="Enter a PMID"
                         error={this.getFormError('pmid')} clearError={this.clrFormErrors.bind(null, 'pmid')}
                         labelClassName="control-label" groupClassName="form-group" required />
                 </div>
                 <div className='modal-footer'>
                     <Input type="cancel" inputClassName="btn-default btn-inline-spacer" cancelHandler={this.cancelForm} />
-                    <Input type="submit" inputClassName="btn-primary btn-inline-spacer" title="Add Article" />
+                    <Input type="submit" inputClassName={this.getFormError('pmid') === null || this.getFormError('pmid') === undefined || this.getFormError('pmid') === '' ?
+                        "btn-primary btn-inline-spacer" : "btn-primary btn-inline-spacer disabled"} title="Add Article" />
                 </div>
             </Form>
         );
