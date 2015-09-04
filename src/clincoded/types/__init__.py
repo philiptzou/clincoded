@@ -111,15 +111,28 @@ class Variant(Item):
     name_key = 'uuid'
     embedded = [
         'submitted_by',
+        'associatedGdms',
         'associatedFamilies',
         'associatedIndividuals',
         'associatedExperimental',
     ]
     rev = {
+        'associatedGdms': ('gdm', 'variantPathogenic.variants'),
         'associatedFamilies': ('family', 'segregation.variants'),
         'associatedIndividuals': ('individual', 'variants'),
         'associatedExperimental': ('experimental', 'variants'),
     }
+
+    @calculated_property(schema={
+        "title": "Associated GDMs",
+        "type": "array",
+        "items": {
+            "type": ['string', 'object'],
+            "linkFrom": "gdm.variantPathogenic.variants",
+        },
+    })
+    def associatedGdms(self, request, associatedGdms):
+        return paths_filtered_by_status(request, associatedGdms)
 
     @calculated_property(schema={
         "title": "Associated Families",
