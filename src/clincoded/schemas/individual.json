@@ -263,24 +263,20 @@
             "title": "Diagnosis",
             "type": "string"
         },
-        "date_created": {
-            "title": "Creation Date",
-            "type": "string"
-        },
-        "sex": {
-            "title": "Sex",
-            "type": "string"
-        },
-        "race": {
-            "title": "Race",
-            "type": "string"
-        },
         "proband": {
             "title": "Proband",
             "type": "boolean"
         },
         "submitted_by.uuid": {
             "title": "Creator",
+            "type": "string"
+        },
+        "date_created": {
+            "title": "Creation Date",
+            "type": "string"
+        },
+        "last_modified": {
+            "title": "Last Modified",
             "type": "string"
         }
     }

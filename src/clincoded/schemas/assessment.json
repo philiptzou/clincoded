@@ -28,7 +28,17 @@
         },
         "evidence_type": {
             "description": "Object type of assessed evidence",
-            "type": "string"
+            "type": "string",
+            "enum": [
+                "Segregation",
+                "Pathogenicity",
+                "Biochemical function",
+                "Functional alteration of gene or gene product",
+                "Protein Interactions",
+                "Rescue",
+                "Model systems",
+                "Expression"
+            ]
         },
         "evidence_id": {
             "description": "uuidof assessed evidence",
@@ -46,12 +56,16 @@
         }
     },
     "columns": {
-        "submitted_by.title": {
+        "submitted_by.uuid": {
             "title": "Owner",
             "type": "string"
         },
         "evidence_type": {
             "title": "Evidence",
+            "type": "string"
+        },
+        "evidence_id": {
+            "title": "Evidence ID",
             "type": "string"
         },
         "evidence_gdm": {

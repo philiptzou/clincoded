@@ -38,7 +38,8 @@
         "last_modified": "2015-08-19T08:35:18.000000+00:00",
         "annotations": [
             "bb3432ca-1788-11e5-aefb-60f81dc5b05a",
-            "5cd72a73-189e-11e5-9db5-60f81dc5b05a"
+            "5cd72a73-189e-11e5-9db5-60f81dc5b05a",
+            "4172f4ab-189e-11e5-a10f-60f81dc5b05a"
         ],
         "variantPathogenicity": [
             "23a34abf-cd82-44de-a228-a604709315f9",
@@ -61,9 +62,6 @@
         "submitted_by": "e49d01a5-51f7-4a32-ba0e-b2a71684e4aa",
         "date_created": "2015-03-13T17:23:22.000000+00:00",
         "last_modified": "2015-08-19T08:35:18.000000+00:00",
-        "annotations": [
-            "4172f4ab-189e-11e5-a10f-60f81dc5b05a"
-        ],
         "active": true
     },
     {

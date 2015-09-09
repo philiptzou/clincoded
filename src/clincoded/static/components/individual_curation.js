@@ -1074,7 +1074,7 @@ var IndividualVariantInfo = function() {
                         );
                     })}
                 </div>
-            }            
+            }
         </div>
     );
 };
