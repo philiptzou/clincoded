@@ -653,6 +653,7 @@ class Experimental(Item):
         'biochemicalFunction.geneFunctionConsistentWithPhenotype.assessments.submitted_by',
         'proteinIneractions.assessments',
         'proteinIneractions.assessments.submitted_by',
+        'proteinIneractions.interactingGenes',
         'expression.normalExpression.assessments',
         'expression.normalExpression.assessments.submitted_by',
         'expression.alteredExpression.assessments',
