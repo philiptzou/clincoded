@@ -88,30 +88,19 @@
         "active": true
     },
     {
-        "uuid": "430b4d6e-681d-4345-8936-02df2f65ebf8",
-        "submitted_by": "d84302eb-ce02-49c2-9ec0-dac58f490bdf",
-        "value": "Review",
-        "evidence_type": "Pathogenicity",
-        "evidence_id": "23a34abf-cd82-44de-a228-a604709315f9",
+        "uuid": "de3e1fc5-2f33-40ba-9a07-83676b25fe5b",
+        "submitted_by": "e49d01a5-51f7-4a32-ba0e-b2a71684e4aa",
+        "value": "Supports",
+        "evidence_type": "Segregation",
+        "evidence_id": "25c6a663-18fa-11e5-8554-60f81dc5b05a",
         "evidence_gdm": "9ffd7c1e-16d9-11e5-b283-60f81dc5b05a",
-        "date_created": "2015-03-01T12:52:27.000000+00:00",
-        "last_modified": "2015-08-19T08:35:18.000000+00:00",
-        "active": true
-    },
-    {
-        "uuid": "0e953b83-c2b0-4468-abff-1af3077e3dee",
-        "submitted_by": "04442cec-6ab7-40d0-af26-1e5fefd535eb",
-        "value": "Review",
-        "evidence_type": "Pathogenicity",
-        "evidence_id": "23a34abf-cd82-44de-a228-a604709315f9",
-        "evidence_gdm": "9ffd7c1e-16d9-11e5-b283-60f81dc5b05a",
-        "date_created": "2015-03-02T12:52:27.000000+00:00",
+        "date_created": "2015-03-31T12:52:27.000000+00:00",
         "last_modified": "2015-08-19T08:35:18.000000+00:00",
         "active": true
     },
     {
         "uuid": "25285bb5-e0d0-47a6-8404-6ab63e6e71fb",
-        "submitted_by": "e49d01a5-51f7-4a32-ba0e-b2a71684e4aa",
+        "submitted_by": "04442cec-6ab7-40d0-af26-1e5fefd535eb",
         "value": "Supports",
         "evidence_type": "Pathogenicity",
         "evidence_id": "94184c52-38ab-4fdf-acc0-c1170d4d2427",
@@ -121,34 +110,12 @@
         "active": true
     },
     {
-        "uuid": "5ff17117-8d6f-4723-8969-cfd0ad67a79c",
-        "submitted_by": "d84302eb-ce02-49c2-9ec0-dac58f490bdf",
-        "value": "Contradicts",
-        "evidence_type": "Pathogenicity",
-        "evidence_id": "94184c52-38ab-4fdf-acc0-c1170d4d2427",
-        "evidence_gdm": "23a34abf-cd82-44de-a228-a604709315f9",
-        "date_created": "2015-03-04T12:52:27.000000+00:00",
-        "last_modified": "2015-08-19T08:35:18.000000+00:00",
-        "active": true
-    },
-    {
-        "uuid": "47f8be2f-f7e2-435c-9955-cccf2b6aba14",
-        "submitted_by": "04442cec-6ab7-40d0-af26-1e5fefd535eb",
-        "value": "Contradicts",
-        "evidence_type": "Pathogenicity",
-        "evidence_id": "82dcd58a-4493-4196-a234-93bda7aeee9f",
-        "evidence_gdm": "23a34abf-cd82-44de-a228-a604709315f9",
-        "date_created": "2015-03-04T12:52:27.000000+00:00",
-        "last_modified": "2015-08-19T08:35:18.000000+00:00",
-        "active": true
-    },
-    {
         "uuid": "51da1679-d731-42d2-ad2d-2ac45fc563be",
         "submitted_by": "e49d01a5-51f7-4a32-ba0e-b2a71684e4aa",
         "value": "Supports",
         "evidence_type": "Pathogenicity",
-        "evidence_id": "82dcd58a-4493-4196-a234-93bda7aeee9f",
-        "evidence_gdm": "23a34abf-cd82-44de-a228-a604709315f9",
+        "evidence_id": "23a34abf-cd82-44de-a228-a604709315f9",
+        "evidence_gdm": "9ffd7c1e-16d9-11e5-b283-60f81dc5b05a",
         "date_created": "2015-03-05T12:52:27.000000+00:00",
         "last_modified": "2015-08-19T08:35:18.000000+00:00",
         "active": true
@@ -228,6 +195,72 @@
         "evidence_gdm": "9ffd7c1e-16d9-11e5-b283-60f81dc5b05a",
         "date_created": "2015-07-15T12:52:27.000000+00:00",
         "last_modified": "2015-07-19T08:35:18.000000+00:00",
+        "active": true
+    },
+    {
+        "uuid": "cb2541d7-1a21-4450-a5d1-ec0cd1a91b7e",
+        "submitted_by": "e49d01a5-51f7-4a32-ba0e-b2a71684e4aa",
+        "value": "Supports",
+        "evidence_type": "Pathogenicity",
+        "evidence_id": "5f5f6896-59cb-435e-8407-1d3996b6e502",
+        "evidence_gdm": "9ffd7c1e-16d9-11e5-b283-60f81dc5b05a",
+        "date_created": "2015-08-15T12:52:27.000000+00:00",
+        "last_modified": "2015-08-19T08:35:18.000000+00:00",
+        "active": true
+    },
+    {
+        "uuid": "61ae58a8-db5e-4a43-80bf-9bb2e04fd794",
+        "submitted_by": "e49d01a5-51f7-4a32-ba0e-b2a71684e4aa",
+        "value": "Supports",
+        "evidence_type": "Pathogenicity",
+        "evidence_id": "d831ef32-e4e7-42e2-af11-e6de0664cb28",
+        "evidence_gdm": "9ffd7c1e-16d9-11e5-b283-60f81dc5b05a",
+        "date_created": "2015-08-15T12:52:27.000000+00:00",
+        "last_modified": "2015-08-19T08:35:18.000000+00:00",
+        "active": true
+    },
+    {
+        "uuid": "5090d816-60ff-4602-ab5c-431cb9bce5d6",
+        "submitted_by": "e49d01a5-51f7-4a32-ba0e-b2a71684e4aa",
+        "value": "Supports",
+        "evidence_type": "Pathogenicity",
+        "evidence_id": "ca83ac65-5f87-4e3c-a7e3-60ab2e48d33b",
+        "evidence_gdm": "9ffd7c1e-16d9-11e5-b283-60f81dc5b05a",
+        "date_created": "2015-08-15T12:52:27.000000+00:00",
+        "last_modified": "2015-08-19T08:35:18.000000+00:00",
+        "active": true
+    },
+    {
+        "uuid": "6bd9a5f3-9c93-4027-8d0a-619ed8419c6a",
+        "submitted_by": "d84302eb-ce02-49c2-9ec0-dac58f490bdf",
+        "value": "Supports",
+        "evidence_type": "Segregation",
+        "evidence_id": "a20e9182-18fa-11e5-96d1-60f81dc5b05a",
+        "evidence_gdm": "9ffd7c1e-16d9-11e5-b283-60f81dc5b05a",
+        "date_created": "2015-08-15T12:52:27.000000+00:00",
+        "last_modified": "2015-08-19T08:35:18.000000+00:00",
+        "active": true
+    },
+    {
+        "uuid": "b2f1d0c8-37e3-4f9c-ac3b-f42cd1569a7f",
+        "submitted_by": "e49d01a5-51f7-4a32-ba0e-b2a71684e4aa",
+        "value": "Supports",
+        "evidence_type": "Pathogenicity",
+        "evidence_id": "89d48c23-764a-47d4-bd6e-366502224e12",
+        "evidence_gdm": "9ffd7c1e-16d9-11e5-b283-60f81dc5b05a",
+        "date_created": "2015-08-15T12:52:27.000000+00:00",
+        "last_modified": "2015-08-19T08:35:18.000000+00:00",
+        "active": true
+    },
+    {
+        "uuid": "334e4629-a579-4e93-8274-2a52cbfabc2e",
+        "submitted_by": "d84302eb-ce02-49c2-9ec0-dac58f490bdf",
+        "value": "Supports",
+        "evidence_type": "Pathogenicity",
+        "evidence_id": "82dcd58a-4493-4196-a234-93bda7aeee9f",
+        "evidence_gdm": "9ffd7c1e-16d9-11e5-b283-60f81dc5b05a",
+        "date_created": "2015-08-15T12:52:27.000000+00:00",
+        "last_modified": "2015-08-19T08:35:18.000000+00:00",
         "active": true
     }
 ]

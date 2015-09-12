@@ -46,7 +46,7 @@ var ProvisionalCuration = React.createClass({
             finalExperimentalScore: 0,
             publications: [],
             years: '',
-            totalScore: 0.0,
+            totalScore: {},
             autoClassification: ''
         };
     },
@@ -209,20 +209,22 @@ var ProvisionalCuration = React.createClass({
                     if (seg.variants) {
                         var variants = seg.variants;
                         for (var j in variants) {
-                            if (in_array(variants[j].uuid, variantIdList) && !in_array(family.uuid, familyIdPicked)) {
+                            if (in_array(variants[j].uuid, variantIdList)) {
                                 familiesCollected.push({ "family":family.uuid, "variant":variants[j].uuid, "pmid":article.pmid, "year":article.date });
-                                familyIdPicked.push(family.uuid);
+                                if (!in_array(family.uuid, familyIdPicked)) {
+                                    familyIdPicked.push(family.uuid);
+                                }
                                 if (!in_array(article.pmid, articleCollected)) {
                                     articleCollected.push(article.pmid);
                                     earliest = serEarliestYear(earliest, article.date);
                                 }
-                                break;
                             }
                         }
                     }
                 }
             }
             stateObj.familiesCollected = familiesCollected;
+            stateObj.testStr = familyIdPicked.length + '';
 
             var individualsCollected = [];
             if (variantIdList.length > 0 && allIndividuals.length >0) {
@@ -249,51 +251,69 @@ var ProvisionalCuration = React.createClass({
             var currentYear = year.getFullYear();
             stateObj.years = (currentYear.valueOf() - earliest.valueOf()) + ' = ' + currentYear + ' - ' + earliest;
             var time = currentYear.valueOf() - earliest.valueOf();
-            var totalScore = 0;
+            var timeScore = 0, probandScore = 0, pubScore = 0, expScore = 0;
             if (time > 1 && time <= 3) {
-                totalScore += 1;
+                timeScore = 1;
             }
             else if (time > 3) {
-                totalScore += 2;
+                timeScore = 2;
+            }
+            else {
+                timeScore = 0;
             }
             var proband = stateObj.familiesCollected.length + stateObj.individualsCollected.length;
             if (proband > 18) {
-                totalScore += 7;
+                probandScore = 7;
             }
             else if (proband >=16) {
-                totalScore += 6;
+                probandScore = 6;
             }
             else if (proband > 12) {
-                totalScore += 5;
+                probandScore = 5;
             }
             else if (proband > 9) {
-                totalScore += 4;
+                probandScore = 4;
             }
             else if (proband > 6) {
-                totalScore += 3;
+                probandScore = 3;
             }
             else if (proband > 3) {
-                totalScore += 2;
+                probandScore = 2;
             }
             else if (proband >= 1) {
-                totalScore += 1;
-            }
-            if (stateObj.finalExperimentalScore >= 6) {
-                totalScore += 6;
+                probandScore = 1;
             }
             else {
-                totalScore += stateObj.finalExperimentalScore;
+                probandScore = 0;
             }
-            totalScore += stateObj.publications.length;
-            stateObj.totalScore = totalScore;
+            if (stateObj.finalExperimentalScore >= 6) {
+                expScore = 6;
+            }
+            else {
+                expScore = stateObj.finalExperimentalScore;
+            }
+            if (stateObj.publications.length >= 5) {
+                pubScore = 5;
+            }
+            else {
+                pubScore = stateObj.publications.length;
+            }
+            if (stateObj.finalExperimentalScore >= 6) {
+                expScore = 6;
+            }
+            else {
+                expScore = stateObj.finalExperimentalScore;
+            }
+            stateObj.totalScore = {'proband':probandScore, 'pub':pubScore, 'time':timeScore, 'exp':expScore};
 
-            if (stateObj.totalScore > 16){
+            var totalScore = probandScore + pubScore + timeScore + expScore;
+            if (totalScore > 16){
                 stateObj.autoClassification = 'Definitive';
             }
-            else if (stateObj.totalScore > 12) {
+            else if (totalScore > 12) {
                 stateObj.autoClassification = 'Strong';
             }
-            else if (stateObj.totalScore > 9) {
+            else if (totalScore > 9) {
                 stateObj.autoClassification = 'Moderate';
             }
             else {
@@ -329,28 +349,28 @@ var ProvisionalCuration = React.createClass({
                     <tr><td width="60px"><strong>Exp</strong></td><td width="300px"><strong>Type</strong></td><td width="100px"><strong>Unit Score</strong></td></tr>
                     {this.state.assessed_exp.map(function(exp, i) { return <tr><td>{i}</td><td>{exp.type}</td><td align="center">{exp.score}</td></tr>; })}
                 </table>
-                <h3>Final Exp. Score: {this.state.finalExperimentalScore}</h3>
                 <hr width="100%" />
                 <h3># Variants assessed: {this.state.assessed_patho.length}</h3>
                 <table>
                     <tr><td width="300px"><strong>Pathogenicity</strong></td><td width="300px"><strong>Variant</strong></td><td width="100px"><strong>Assessment</strong></td><td width="300px"><strong>By</strong></td></tr>
                     {this.state.assessed_patho.map(function(variant) { return <tr><td>{variant.patho}</td><td>{variant.variant}</td><td>{variant.value}</td><td>{variant.assessedBy}</td></tr>; })}
                 </table>
-                <h3># Family Counted: {this.state.familiesCollected.length}</h3>
+                <h3># Variants Associated to Family: {this.state.familiesCollected.length}; # Proband Counted in Families: {this.state.testStr}</h3>
                 <table>
                     <tr><td width="300px"><strong>Family</strong></td><td width="300px"><strong>Variant</strong></td><td width="100px"><strong>PMID</strong></td><td width="300px"><strong>Pub Year</strong></td></tr>
                     {this.state.familiesCollected.map(function(item) { return <tr><td>{item.family}</td><td>{item.variant}</td><td>{item.pmid}</td><td>{item.year}</td></tr>; })}
                 </table>
-                <h3># Individual Counted: {this.state.individualsCollected.length}</h3>
+                <h3># Proband Counted in Individuals: {this.state.individualsCollected.length}</h3>
                 <table>
                     <tr><td width="300px"><strong>Individual</strong></td><td width="300px"><strong>Variant</strong></td><td width="100px"><strong>PMID</strong></td><td width="300px"><strong>Pub Year</strong></td></tr>
                     {this.state.individualsCollected.map(function(item) { return <tr><td>{item.individual}</td><td>{item.variant}</td><td>{item.pmid}</td><td>{item.year}</td></tr>; })}
                 </table>
                 <hr width="100%" />
-                <h3># Proband: {this.state.familiesCollected.length + this.state.individualsCollected.length}</h3>
-                <h3># Publications: {this.state.publications.length}</h3>
-                <h3># Years: {this.state.years}</h3>
-                <h3>Total Score & Classification Assigned: {this.state.totalScore} / {this.state.autoClassification}</h3>
+                <h3>Final Exp. Score: {this.state.finalExperimentalScore} -- {this.state.totalScore.exp}</h3>
+                <h3># Proband: {this.state.familiesCollected.length + this.state.individualsCollected.length} -- {this.state.totalScore.proband}</h3>
+                <h3># Publications: {this.state.publications.length} -- {this.state.totalScore.pub}</h3>
+                <h3># Years: {this.state.years} -- {this.state.totalScore.time}</h3>
+                <h3>Total Score & Classification Assigned: {this.state.totalScore.time + this.state.totalScore.proband + this.state.totalScore.pub + this.state.totalScore.exp} / {this.state.autoClassification}</h3>
             </div>
         );
     }
