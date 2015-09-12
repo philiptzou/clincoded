@@ -168,30 +168,18 @@ var ProvisionalCuration = React.createClass({
                     var groups = annotations[i].groups;
                     for (var j in groups) {
                         if (groups[j].familyIncluded) {
-                            var familyList = groups[j].familyIncluded;
-                            for (var k in familyList) {
-                                allFamilies.push({ "family": familyList[k], "article": annotations[i].article });
-                            }
+                            array_append(allFamilies, groups[j].familyIncluded, annotations[i].article);
                         }
                         if (groups[j].individualIncluded) {
-                            var individualList = groups[j].individualIncluded;
-                            for (var k in individualList) {
-                                allIndividuals.push({ "individual": individualList[k], "article": annotations[i].article });
-                            }
+                            array_append(allIndividuals, groups[j].individualIncluded, annotations[i].article);
                         }
                     }
                 }
                 if (annotations[i].families) {
-                    var familyList = annotations[i].families;
-                    for (var k in familyList) {
-                        allFamilies.push({ "family": familyList[k], "article": annotations[i].article });
-                    }
+                    array_append(allFamilies, annotations[i].families, annotations[i].article);
                 }
                 if (annotations[i].individuals) {
-                    var individualList = annotations[i].individuals;
-                    for (var k in individualList) {
-                        allIndividuals.push({ "individual": individualList[k], "article": annotations[i].article });
-                    }
+                    array_append(allIndividuals, annotations[i].individuals, annotations[i].article);
                 }
             }
             stateObj.allFamilies = allFamilies;
@@ -202,7 +190,7 @@ var ProvisionalCuration = React.createClass({
             var familiesCollected = [];
             var familyIdPicked = [];
             for (var i in allFamilies) {
-                var family = allFamilies[i]['family'];
+                var family = allFamilies[i]['evidenceObj'];
                 var article = allFamilies[i]['article'];
                 if (family.segregation) {
                     var seg = family.segregation;
@@ -216,7 +204,7 @@ var ProvisionalCuration = React.createClass({
                                 }
                                 if (!in_array(article.pmid, articleCollected)) {
                                     articleCollected.push(article.pmid);
-                                    earliest = serEarliestYear(earliest, article.date);
+                                    earliest = setEarliestYear(earliest, article.date);
                                 }
                             }
                         }
@@ -230,7 +218,7 @@ var ProvisionalCuration = React.createClass({
             if (variantIdList.length > 0 && allIndividuals.length >0) {
                 var individualIdPicked = [];
                 for (var i in allIndividuals) {
-                    var individual = allIndividuals[i]['individual'];
+                    var individual = allIndividuals[i]['evidenceObj'];
                     var article = allIndividuals[i]['article'];
                     var variants = individual.variants;
                     for (var j in variants) {
@@ -239,7 +227,7 @@ var ProvisionalCuration = React.createClass({
                             individualIdPicked.push(individual.uuid);
                             if (!in_array(article.pmid, articleCollected)) {
                                 articleCollected.push(article.pmid);
-                                earliest = serEarliestYear(earliest, article.date);
+                                earliest = setEarliestYear(earliest, article.date);
                             }
                             break;
                         }
@@ -344,33 +332,33 @@ var ProvisionalCuration = React.createClass({
                     <tr><td><strong>db gdm id</strong></td><td>{this.state.gdm.uuid}</td></tr>
                 </table>
                 <hr width="100%" />
-                <h3># Scored Experimental Evidence: {this.state.assessed_exp.length}</h3>
+                <h3>Calculated Score / Assigned Classification: {this.state.totalScore.time + this.state.totalScore.proband + this.state.totalScore.pub + this.state.totalScore.exp} / {this.state.autoClassification}</h3>
+                <h4>Final Exp. Score: {this.state.finalExperimentalScore} -- {this.state.totalScore.exp}</h4>
+                <h4># Proband: {this.state.familiesCollected.length + this.state.individualsCollected.length} -- {this.state.totalScore.proband}</h4>
+                <h4># Publications: {this.state.publications.length} -- {this.state.totalScore.pub}</h4>
+                <h4># Years: {this.state.years} -- {this.state.totalScore.time}</h4>
+                <hr width="100%" />
+                <h4># Scored Experimental Evidence: {this.state.assessed_exp.length}</h4>
                 <table>
                     <tr><td width="60px"><strong>Exp</strong></td><td width="300px"><strong>Type</strong></td><td width="100px"><strong>Unit Score</strong></td></tr>
                     {this.state.assessed_exp.map(function(exp, i) { return <tr><td>{i}</td><td>{exp.type}</td><td align="center">{exp.score}</td></tr>; })}
                 </table>
                 <hr width="100%" />
-                <h3># Variants assessed: {this.state.assessed_patho.length}</h3>
+                <h4># Variants assessed: {this.state.assessed_patho.length}</h4>
                 <table>
                     <tr><td width="300px"><strong>Pathogenicity</strong></td><td width="300px"><strong>Variant</strong></td><td width="100px"><strong>Assessment</strong></td><td width="300px"><strong>By</strong></td></tr>
                     {this.state.assessed_patho.map(function(variant) { return <tr><td>{variant.patho}</td><td>{variant.variant}</td><td>{variant.value}</td><td>{variant.assessedBy}</td></tr>; })}
                 </table>
-                <h3># Variants Associated to Family: {this.state.familiesCollected.length}; # Proband Counted in Families: {this.state.testStr}</h3>
+                <h4># Variants Associated to Family: {this.state.familiesCollected.length}; # Proband Counted in Families: {this.state.testStr}</h4>
                 <table>
                     <tr><td width="300px"><strong>Family</strong></td><td width="300px"><strong>Variant</strong></td><td width="100px"><strong>PMID</strong></td><td width="300px"><strong>Pub Year</strong></td></tr>
                     {this.state.familiesCollected.map(function(item) { return <tr><td>{item.family}</td><td>{item.variant}</td><td>{item.pmid}</td><td>{item.year}</td></tr>; })}
                 </table>
-                <h3># Proband Counted in Individuals: {this.state.individualsCollected.length}</h3>
+                <h4># Proband Counted in Individuals: {this.state.individualsCollected.length}</h4>
                 <table>
                     <tr><td width="300px"><strong>Individual</strong></td><td width="300px"><strong>Variant</strong></td><td width="100px"><strong>PMID</strong></td><td width="300px"><strong>Pub Year</strong></td></tr>
                     {this.state.individualsCollected.map(function(item) { return <tr><td>{item.individual}</td><td>{item.variant}</td><td>{item.pmid}</td><td>{item.year}</td></tr>; })}
                 </table>
-                <hr width="100%" />
-                <h3>Final Exp. Score: {this.state.finalExperimentalScore} -- {this.state.totalScore.exp}</h3>
-                <h3># Proband: {this.state.familiesCollected.length + this.state.individualsCollected.length} -- {this.state.totalScore.proband}</h3>
-                <h3># Publications: {this.state.publications.length} -- {this.state.totalScore.pub}</h3>
-                <h3># Years: {this.state.years} -- {this.state.totalScore.time}</h3>
-                <h3>Total Score & Classification Assigned: {this.state.totalScore.time + this.state.totalScore.proband + this.state.totalScore.pub + this.state.totalScore.exp} / {this.state.autoClassification}</h3>
             </div>
         );
     }
@@ -388,11 +376,18 @@ var in_array = function(item, list) {
     return false;
 };
 
-var serEarliestYear = function(earliest, dateStr) {
+var setEarliestYear = function(earliest, dateStr) {
     var pattern = new RegExp(/^\d\d\d\d/);
     var theYear = pattern.exec(dateStr);
     if (theYear && theYear.valueOf() < earliest.valueOf()) {
         return theYear;
     }
     return earliest;
+};
+
+var array_append =function(target, branch, article) {
+    for (var i in branch) {
+        target.push({"evidenceObj":branch[i], "article":article});
+    }
+    return target;
 };
