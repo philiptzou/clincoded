@@ -444,7 +444,7 @@ var AddOmimIdModal = React.createClass({
         // Start with default validation
         var valid = this.validateDefault();
 
-        // Valid if the field has only 10 or fewer digits 
+        // Valid if the field has only 10 or fewer digits
         if (valid) {
             valid = this.getFormValue('omimid').match(/^[0-9]{1,10}$/i);
             if (!valid) {
@@ -470,9 +470,8 @@ var AddOmimIdModal = React.createClass({
     // nothing happened.
     cancelForm: function(e) {
         e.preventDefault(); e.stopPropagation(); // Don't run through HTML submit handler
-        
         //only a mouse click on cancel button closes modal
-        //(do not let the enter key [which evaluates to 0 mouse 
+        //(do not let the enter key [which evaluates to 0 mouse
         //clicks] be accepted to close modal)
         if (e.detail >= 1){
             this.props.closeModal();
@@ -850,7 +849,6 @@ function flattenIndividual(individual) {
 
     return flat;
 }
-
 
 var gdmSimpleProps = [
     "date_created", "modeInheritance", "omimId", "draftClassification", "finalClassification", "active"

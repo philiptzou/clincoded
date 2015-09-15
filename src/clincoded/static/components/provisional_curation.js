@@ -11,6 +11,9 @@ var RestMixin = require('./rest').RestMixin;
 var methods = require('./methods');
 
 var CurationMixin = curator.CurationMixin;
+var RecordHeader = curator.RecordHeader;
+var PmidSummary = curator.PmidSummary;
+var PmidDoiButtons = curator.PmidDoiButtons;
 var CurationPalette = curator.CurationPalette;
 var PanelGroup = panel.PanelGroup;
 var Panel = panel.Panel;
@@ -32,14 +35,14 @@ var ProvisionalCuration = React.createClass({
 
     getInitialState: function() {
         return {
-            url: '',
-            user: '',
-            gdm: {},
-            testObj: {},
-            testStr: '',
-            testList: [],
-            assessed_patho: [], // list of variant uuid, temp item
-            allFamilies: [], // list of family uuid, temp item
+            url: '', //temp test data
+            user: '',  //temp test data
+            gdm: null, // must be null initially.
+            testObj: {},  //temp test data
+            testStr: '', // temp test data
+            testList: [], // temp test data
+            assessed_patho: [], // list of variant uuid, temp test data
+            allFamilies: [], // list of family uuid, temp test data
             familiesCollected: [],
             individualsCollected: [],
             assessed_exp: [], // list of evidence_type of experimental
@@ -78,7 +81,8 @@ var ProvisionalCuration = React.createClass({
         ).then(datas => {
             var stateObj = {};
             stateObj.url = uris[0];
-            stateObj.user = 'e49d01a5-51f7-4a32-ba0e-b2a71684e4aa';
+            stateObj.user = this.props.session.user_properties.uuid;
+            //stateObj.user = 'e49d01a5-51f7-4a32-ba0e-b2a71684e4aa';
 
             var assessments_all = [];
             datas.forEach(function(data) {
@@ -94,7 +98,12 @@ var ProvisionalCuration = React.createClass({
                 }
             });
 
-            // collect segregation, pathogenicity and experimental assessed as Supports by the user
+            // Update the Curator Mixin OMIM state with the current GDM's OMIM ID.
+            if (stateObj.gdm && stateObj.gdm.omimId) {
+                this.setOmimIdState(stateObj.gdm.omimId);
+            }
+
+            // collect pathogenicity and experimental assessed as Supports by the user
             var pathoList = [], segList = [], expList = [], exp_scores = [0, 0, 0];
             for (var i=0; i<assessments_all.length; i++) {
                 var value = assessments_all[i]['value'];
@@ -126,7 +135,7 @@ var ProvisionalCuration = React.createClass({
                 }
             }
 
-            // 3 temp test lists
+            // temp test data
             stateObj.assessed_exp = expList;
 
             // Calculate experimental score
@@ -209,11 +218,11 @@ var ProvisionalCuration = React.createClass({
             stateObj.years = (currentYear.valueOf() - earliest.valueOf()) + ' = ' + currentYear + ' - ' + earliest;
             var time = currentYear.valueOf() - earliest.valueOf();
             var timeScore = 0, probandScore = 0, pubScore = 0, expScore = 0;
-            if (time > 1 && time <= 3) {
-                timeScore = 1;
-            }
-            else if (time > 3) {
+            if (time >= 3) {
                 timeScore = 2;
+            }
+            else if (time >= 1) {
+                timeScore = 1;
             }
             else {
                 timeScore = 0;
@@ -294,97 +303,94 @@ var ProvisionalCuration = React.createClass({
     },
 
     render: function() {
+        var gdm = this.state.gdm;
+        var gdmUuid = queryKeyValue('gdm', this.props.href);
         this.queryValues.gdmUuid = queryKeyValue('gdm', this.props.href);
 
         var families = count_proband(this.state.familiesCollected);
         var individuals = count_proband(this.state.individualsCollected);
         return (
-            <div className="container">
-                <h1>Summary and Provisional Classification</h1>
-                <hr width="100%" />
-                <table>
-                    <tr><td width="150px"><strong>Login User</strong></td><td width="400px">{this.state.user}</td></tr>
-                    <tr><td><strong>url</strong></td><td>{this.state.url}</td></tr>
-                    <tr><td><strong>db gdm id</strong></td><td>{this.state.gdm.uuid}</td></tr>
-                </table>
-                <hr width="100%" />
-                <h3>Calculated Score / Assigned Classification: {
-                        this.state.totalScore.time + this.state.totalScore.proband + this.state.totalScore.pub +
-                        this.state.totalScore.exp} / {this.state.autoClassification
-                    }
-                </h3>
-                <h4>Final Exp. Score: {this.state.finalExperimentalScore} -- {this.state.totalScore.exp}</h4>
-                <h4># Proband: {families + individuals} -- {this.state.totalScore.proband}</h4>
-                <h4># Publications: {this.state.publications.length} -- {this.state.totalScore.pub}</h4>
-                <h4># Years: {this.state.years} -- {this.state.totalScore.time}</h4>
-                <hr width="100%" />
-                <h4># Scored Experimental Evidence: {this.state.assessed_exp.length}</h4>
-                <table>
-                    <tr><td width="60px"><strong>Exp</strong></td>
-                        <td width="300px"><strong>Type</strong></td>
-                        <td width="100px"><strong>Unit Score</strong></td>
-                    </tr>
-                    {this.state.assessed_exp.map(function(exp, i) { return (
-                        <tr><td>{i}</td>
-                            <td>{exp.type}</td>
-                            <td align="center">{exp.score}</td>
+            <div>
+                <RecordHeader gdm={this.state.gdm} omimId={this.state.currOmimId} updateOmimId={this.updateOmimId} />
+                <div className="container">
+                    <h1>Summary and Provisional Classification</h1>
+                    <hr width="100%" />
+                    <h3>Calculated Score / Assigned Classification: {
+                            this.state.totalScore.time + this.state.totalScore.proband + this.state.totalScore.pub +
+                            this.state.totalScore.exp} / {this.state.autoClassification}
+                    </h3>
+                    <h4>Final Exp. Score: {this.state.finalExperimentalScore} -- {this.state.totalScore.exp}</h4>
+                    <h4># Proband: {families + individuals} -- {this.state.totalScore.proband}</h4>
+                    <h4># Publications: {this.state.publications.length} -- {this.state.totalScore.pub}</h4>
+                    <h4># Years: {this.state.years} -- {this.state.totalScore.time}</h4>
+                    <hr width="100%" />
+                    <h4># Scored Experimental Evidence: {this.state.assessed_exp.length}</h4>
+                    <table>
+                        <tr><td width="60px"><strong>Exp</strong></td>
+                            <td width="300px"><strong>Type</strong></td>
+                            <td width="100px"><strong>Unit Score</strong></td>
                         </tr>
-                    );
-                })}
-                </table>
-                <hr width="100%" />
-                <h4># Variants assessed: {this.state.assessed_patho.length}</h4>
-                <table>
-                    <tr><td width="300px"><strong>Pathogenicity</strong></td>
-                        <td width="300px"><strong>Variant</strong></td>
-                        <td width="100px"><strong>Assessment</strong></td>
-                        <td width="300px"><strong>By</strong></td>
-                    </tr>
-                    {this.state.assessed_patho.map(function(variant) { return (
-                        <tr><td>{variant.patho}</td>
-                            <td>{variant.variant}</td>
-                            <td>{variant.value}</td>
-                            <td>{variant.assessedBy}</td>
+                        {this.state.assessed_exp.map(function(exp, i) { return (
+                            <tr><td>{i}</td>
+                                <td>{exp.type}</td>
+                                <td align="center">{exp.score}</td>
+                            </tr>
+                            );
+                        })}
+                    </table>
+                    <hr width="100%" />
+                    <h4># Variants assessed: {this.state.assessed_patho.length}</h4>
+                    <table>
+                        <tr><td width="300px"><strong>Pathogenicity</strong></td>
+                            <td width="300px"><strong>Variant</strong></td>
+                            <td width="100px"><strong>Assessment</strong></td>
+                            <td width="300px"><strong>By</strong></td>
                         </tr>
-                    );
-                })}
-                </table>
-                <h4># Family: {families}</h4>
-                <table>
-                    <tr><td width="300px"><strong>Family</strong></td>
-                        <td width="300px"><strong>Variant</strong></td>
-                        <td width="100px"><strong>PMID</strong></td>
-                        <td width="300px"><strong>Pub Year</strong></td>
-                    </tr>
-                    {this.state.familiesCollected.map(function(item) { return (
-                    <tr><td>{item.evidence}</td>
-                        <td>{item.variant}</td>
-                        <td>{item.pmid}</td>
-                        <td>{item.date}</td>
-                    </tr>
-                    );
-                })}
-                </table>
-                <h4># Individual: {individuals}</h4>
-                <table>
-                    <tr><td width="300px"><strong>Individual</strong></td>
-                        <td width="300px"><strong>Variant</strong></td>
-                        <td width="100px"><strong>PMID</strong></td>
-                        <td width="300px"><strong>Pub Year</strong></td>
-                    </tr>
-                    {this.state.individualsCollected.map(function(item) { return (
-                        <tr><td>{item.evidence}</td>
-                            <td>{item.variant}</td>
-                            <td>{item.pmid}</td>
-                            <td>{item.date}</td>
+                        {this.state.assessed_patho.map(function(variant) { return (
+                            <tr><td>{variant.patho}</td>
+                                <td>{variant.variant}</td>
+                                <td>{variant.value}</td>
+                                <td>{variant.assessedBy}</td>
+                            </tr>
+                            );
+                        })}
+                    </table>
+                    <h4># Family: {families}</h4>
+                    <table>
+                        <tr><td width="300px"><strong>Family</strong></td>
+                            <td width="300px"><strong>Variant</strong></td>
+                            <td width="100px"><strong>PMID</strong></td>
+                            <td width="300px"><strong>Pub Year</strong></td>
                         </tr>
-                    );
-                })}
-                </table>
+                        {this.state.familiesCollected.map(function(item) { return (
+                            <tr><td>{item.evidence}</td>
+                                <td>{item.variant}</td>
+                                <td>{item.pmid}</td>
+                                <td>{item.date}</td>
+                            </tr>
+                            );
+                        })}
+                    </table>
+                    <h4># Individual: {individuals}</h4>
+                    <table>
+                        <tr><td width="300px"><strong>Individual</strong></td>
+                            <td width="300px"><strong>Variant</strong></td>
+                            <td width="100px"><strong>PMID</strong></td>
+                            <td width="300px"><strong>Pub Year</strong></td>
+                        </tr>
+                        {this.state.individualsCollected.map(function(item) { return (
+                            <tr><td>{item.evidence}</td>
+                                <td>{item.variant}</td>
+                                <td>{item.pmid}</td>
+                                <td>{item.date}</td>
+                            </tr>
+                            );
+                        })}
+                    </table>
+                </div>
             </div>
         );
     }
-
 });
 
 globals.curator_page.register(ProvisionalCuration,  'curator_page', 'provisional-curation');
