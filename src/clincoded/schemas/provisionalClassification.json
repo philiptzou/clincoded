@@ -32,7 +32,7 @@
             "type": "string",
             "default": ""
         },
-        "Reasons": {
+        "reasons": {
             "title": "Reasons",
             "description": "Reasons for changing the classification",
             "type": "string",
