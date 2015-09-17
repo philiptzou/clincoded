@@ -40,8 +40,7 @@ var ProvisionalCuration = React.createClass({
             provisional: null, // login user's existing provisional object, must be null initially.
             assessments: null,  // list of all assessments, must be nul initially.
             totalScore: null,
-            autoClassification: null,
-            rerun: null
+            autoClassification: null
         };
     },
 
@@ -135,15 +134,28 @@ var ProvisionalCuration = React.createClass({
         }
 
         if (this.state.provisional) {
+            //this.putRestData('/provisional/' + this.state.provisional.uuid, newProvisional).then(data => {
+            //    this.state.provisional = data;
+            //});
             this.state.provisional = newProvisional;
             this.setState();
-            //this.putRestData('/provisional/' + this.state.provisional.uuid, newProvisional);
         }
         else {
             this.postRestData('/provisional/', newProvisional);
         }
         this.resetAllFormValues();
         this.context.navigate('/provisional-curation/?gdm=' + this.state.gdm.uuid);
+    },
+
+    cancelForm: function(e) {
+        // Don't run through HTML submit handler
+        e.preventDefault();
+        e.stopPropagation();
+
+        // click Cancel button will go back to view - current
+        if (e.detail >= 1){
+            this.context.navigate('/provisional-curation/?gdm=' + this.state.gdm.uuid);
+        }
     },
 
     render: function() {
@@ -153,6 +165,7 @@ var ProvisionalCuration = React.createClass({
 
         var alteredClassification = (this.state.provisional && this.state.provisional.alteredClassification) ? this.state.provisional.alteredClassification : '';
         var reasons = (this.state.provisional && this.state.provisional.reasons) ? this.state.provisional.reasons : '';
+
         var families = count_proband(this.state.familiesCollected);
         var individuals = count_proband(this.state.individualsCollected);
         return (
@@ -164,37 +177,48 @@ var ProvisionalCuration = React.createClass({
                             <h1>Summary And Provisional Classification: </h1>
                                 { (this.state.gdm && this.state.provisional) ?
                                     <div>
-                                        <Panel width="100%" title="View - Saved Score & Classification" open>
-                                            <div className="form-group">
-                                                <div className="col-sm-5"><strong className="pull-right">Total Score:</strong></div>
+                                        <Panel width="100%" title="View - Currently saved data" open>
+                                            <div className="row">
+                                                <div className="col-sm-5"><strong>Total Score:</strong></div>
                                                 <div className="col-sm-7"><span>{this.state.provisional.totalScore}</span></div>
                                             </div>
-                                            <div className="form-group">
+                                            <div className="row">
                                                 <div className="col-sm-5">
-                                                    <strong className="pull-right">Calcaleted Clinical Validity Classification:</strong
+                                                    <strong>Calcaleted Clinical Validity Classification:</strong
                                                 ></div>
                                                 <div className="col-sm-7"><span>{this.state.provisional.autoClassification}</span></div>
                                             </div>
-                                            <div className="form-group">
+                                            <div className="row">
                                                 <div className="col-sm-5">
-                                                    <strong className="pull-right">Change Provisional Clinical Validity Classification:</strong>
+                                                    <strong>Change Provisional Clinical Validity Classification:</strong>
                                                 </div>
-                                                { (alteredClassification !== '') ?
-                                                    <div className="col-sm-7"><span>{alteredClassification}</span></div>
-                                                    :
-                                                    <div className="col-sm-7"><span>&nbsp;</span></div>
-                                                }
-
+                                                <div className="col-sm-7"><span>{alteredClassification}</span></div>
                                             </div>
-                                            <div className="form-group">
-                                                <div className="col-sm-5"><strong className="pull-right">Explain Reason(s) for Change:</strong></div>
+                                            <div className="row">
+                                                <div className="col-sm-5"><strong>Explain Reason(s) for Change:</strong></div>
                                                 <div className="col-sm-7"><span>{reasons}</span></div>
-                                                <div><span>&nbsp;</span></div>
                                             </div>
+                                            <div className="row">
+                                                <div className="col-sm-5"><strong>Date Created:</strong></div>
+                                                <div className="col-sm-7">
+                                                    <span>{moment(this.state.provisional.date_created).format("YYYY MMM DD, h:mm a")}</span>
+                                                </div>
+                                            </div>
+                                            <div className="row">
+                                                <div className="col-sm-5"><strong>Last Modified:</strong></div>
+                                                <div className="col-sm-7">
+                                                    <span>{moment(this.state.provisional.last_modified).format("YYYY MMM DD, h:mm a")}</span>
+                                                </div>
+                                            </div>
+                                            <div><span>&nbsp;</span></div>
                                             <br />
                                         </Panel>
                                         { (this.state.gdm && rerun !== 'yes') ?
-                                            <a href={this.props.href + '&rerun=yes'} title="Click to calculate again"><h4>Calculate Again</h4></a>
+                                            <div  style={{width:'100%'}}>
+                                                <a href={this.props.href + '&rerun=yes'} title="Click to calculate again" style={{float:'right'}}>
+                                                    <h4>Calculate Again</h4>
+                                                </a>
+                                            </div>
                                             : null
                                         }
                                     </div>
@@ -203,11 +227,12 @@ var ProvisionalCuration = React.createClass({
                                 { (this.state.gdm && (!this.state.provisional || rerun === 'yes')) ?
                                     <div>
                                         <Form submitHandler={this.submitForm} formClassName="form-horizontal form-std">
-                                            <Panel title="Curation - New Calculation" open>
+                                            <Panel title="Curation - New calculation" open>
                                                 {NewCalculation.call(this)}
                                             </Panel>
-                                            <div className="curation-submit clearfix">
-                                                <Input type="submit" inputClassName="btn-primary pull-right" id="submit" title="Save" />
+                                            <div className='modal-footer'>
+                                                <Input type="cancel" inputClassName="btn-default btn-inline-spacer" cancelHandler={this.cancelForm} />
+                                                <Input type="submit" inputClassName="btn-primary btn-inline-spacer pull-right" id="submit" title="Save" />
                                             </div>
                                         </Form>
                                     </div>
@@ -423,6 +448,34 @@ var NewCalculation = function() {
             </Input>
             <Input type="textarea" ref="reasons" label="Explain Reason(s) for Change:" rows="5" labelClassName="col-sm-5 control-label"
                 wrapperClassName="col-sm-7" groupClassName="form-group" />
+            <div className="col-sm-5"><strong>Summary Details</strong></div>
+            <hr style={{width:'100%', border:'solid 1px #ddd'}} />
+            <div>
+                <table>
+                    <tr><td><strong>Total Experimental Score:</strong></td><td><strong>{expScore}</strong></td></tr>
+                    {expList.map(function(exp) {
+                        return (
+                            <tr><td style={{width:'300px'}}>{exp.type}</td>
+                                <td style={{width:'100px'}}>{exp.score}</td>
+                            </tr>
+                        );
+                    })}
+                    <tr><td cols="2"><strong>&nbsp;</strong></td></tr>
+                    <tr><td><strong>Proband Score:</strong></td><td><strong>{probandScore}</strong></td></tr>
+                    <tr><td># Family</td><td>{count_proband(familiesCollected)}</td></tr>
+                    <tr><td># Individual</td><td>{count_proband(individualsCollected)}</td></tr>
+                    <tr><td cols="2"><strong>&nbsp;</strong></td></tr>
+                    <tr><td><strong>Publication Score:</strong></td><td><strong>{pubScore}</strong></td></tr>
+                    <tr><td># Article</td><td>{articleCollected.length}</td></tr>
+                    <tr><td cols="2"><strong>&nbsp;</strong></td></tr>
+                    <tr><td><strong>Time Score:</strong></td><td><strong>{timeScore}</strong></td></tr>
+                    <tr><td>Earliest Year</td><td>{earliest}</td></tr>
+                </table>
+            </div>
+            <hr style={{width:'100%', border:'solid 1px #ddd'}} />
+            <div className="col-sm-7" style={{width:'100%'}}>
+                <span style={{color:'red', float:'right'}}>Click Save below will permanenetly change your currently saved data.</span>
+            </div>
         </div>
     );
 };
