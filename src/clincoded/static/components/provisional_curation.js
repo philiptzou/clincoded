@@ -36,27 +36,18 @@ var ProvisionalCuration = React.createClass({
     getInitialState: function() {
         return {
             user: null, // login user uuid
-            gdm: null, // must be null initially.
-            provisional: null, // must be null initially.
-            assessments: null,  //temp test data
-            testStr: null, // temp test data
-            testList: [], // temp test data
-            assessed_patho: [], // list of variant uuid, temp test data
-            allFamilies: [], // list of family uuid, temp test data
-            familiesCollected: [],
-            individualsCollected: [],
-            assessed_exp: [], // list of evidence_type of experimental
-            finalExperimentalScore: 0,
-            publications: [],
-            years: '',
-            totalScore: {},
-            autoClassification: ''
+            gdm: null, // current gdm object, must be null initially.
+            provisional: null, // login user's existing provisional object, must be null initially.
+            assessments: null,  // list of all assessments, must be nul initially.
+            totalScore: null,
+            autoClassification: null,
+            rerun: null
         };
     },
 
     loadData: function() {
         var gdmUuid = this.queryValues.gdmUuid;
-        var rerun = this.queryValues.rerun; //queryKeyValue('rerun', this.props.href);
+        //var rerun = this.queryValues.rerun; //queryKeyValue('rerun', this.props.href);
 
         // get gdm and all assessments from db.
         var uris = _.compact([
@@ -116,11 +107,52 @@ var ProvisionalCuration = React.createClass({
         this.loadData();
     },
 
+    submitForm: function(e) {
+        // Don't run through HTML submit handler
+        e.preventDefault();
+        e.stopPropagation();
+
+        // Save all form values from the DOM.
+        this.saveAllFormValues();
+
+        var gdm = this.state.gdm;
+        var newProvisional = this.state.provisional ? this.state.provisional : {};
+        newProvisional.totalScore = this.state.totalScore;
+        newProvisional.autoClassification = this.state.autoClassification;
+        var value = this.getFormValue('alteredClassification');
+        if (value !== 'none') {
+            newProvisional.alteredClassification = value;
+        }
+        else if (newProvisional.alteredClassification) {
+            delete newProvisional.alteredClassification;
+        }
+        value = this.getFormValue('reasons');
+        if (value !== '') {
+            newProvisional.reasons = value;
+        }
+        else if (newProvisional.reasons) {
+            delete newProvisional.reasons;
+        }
+
+        if (this.state.provisional) {
+            this.state.provisional = newProvisional;
+            this.setState();
+            //this.putRestData('/provisional/' + this.state.provisional.uuid, newProvisional);
+        }
+        else {
+            this.postRestData('/provisional/', newProvisional);
+        }
+        this.resetAllFormValues();
+        this.context.navigate('/provisional-curation/?gdm=' + this.state.gdm.uuid);
+    },
+
     render: function() {
         this.queryValues.gdmUuid = queryKeyValue('gdm', this.props.href);
         var rerun = queryKeyValue('rerun', this.props.href);
-        this.queryValues.rerun = rerun;
+        //this.queryValues.rerun = rerun;
 
+        var alteredClassification = (this.state.provisional && this.state.provisional.alteredClassification) ? this.state.provisional.alteredClassification : '';
+        var reasons = (this.state.provisional && this.state.provisional.reasons) ? this.state.provisional.reasons : '';
         var families = count_proband(this.state.familiesCollected);
         var individuals = count_proband(this.state.individualsCollected);
         return (
@@ -132,7 +164,7 @@ var ProvisionalCuration = React.createClass({
                             <h1>Summary And Provisional Classification: </h1>
                                 { (this.state.gdm && this.state.provisional) ?
                                     <div>
-                                        <Panel width="100%" title="View - Saved Version" open>
+                                        <Panel width="100%" title="View - Saved Score & Classification" open>
                                             <div className="form-group">
                                                 <div className="col-sm-5"><strong className="pull-right">Total Score:</strong></div>
                                                 <div className="col-sm-7"><span>{this.state.provisional.totalScore}</span></div>
@@ -147,11 +179,16 @@ var ProvisionalCuration = React.createClass({
                                                 <div className="col-sm-5">
                                                     <strong className="pull-right">Change Provisional Clinical Validity Classification:</strong>
                                                 </div>
-                                                <div className="col-sm-7"><span>{this.state.provisional.alteredClassification}</span></div>
+                                                { (alteredClassification !== '') ?
+                                                    <div className="col-sm-7"><span>{alteredClassification}</span></div>
+                                                    :
+                                                    <div className="col-sm-7"><span>&nbsp;</span></div>
+                                                }
+
                                             </div>
                                             <div className="form-group">
                                                 <div className="col-sm-5"><strong className="pull-right">Explain Reason(s) for Change:</strong></div>
-                                                <div className="col-sm-7"><span>{this.state.provisional.reasons}</span></div>
+                                                <div className="col-sm-7"><span>{reasons}</span></div>
                                                 <div><span>&nbsp;</span></div>
                                             </div>
                                             <br />
@@ -198,7 +235,6 @@ var NewCalculation = function() {
         var gdmAssessed = assessments[i]['evidence_gdm'];
         var evid_type = assessments[i]['evidence_type'];
         var evid_id = assessments[i]['evidence_id'];
-        //var user = stateObj.user
 
         if (gdmAssessed == gdm.uuid && owner == this.state.user && value == 'Supports') {
             if (evid_type == 'Pathogenicity') {
@@ -272,6 +308,7 @@ var NewCalculation = function() {
         }
     }
 
+    // Collect articles and find the earliest publication year
     var articleCollected = [];
     var year = new Date();
     var earliest = year.getFullYear();
@@ -362,15 +399,18 @@ var NewCalculation = function() {
         autoClassification = 'Limited';
     }
 
+    this.state.totalScore = totalScore;
+    this.state.autoClassification = autoClassification;
+
     return (
         <div className="form-group">
             <div className="col-sm-5"><strong className="pull-right">Total Score:</strong></div>
-            <div className="col-sm-7"><span>{totalScore}</span></div>
+            <div className="col-sm-7"><span>{this.state.totalScore}</span></div>
             <div className="col-sm-5"><span className="pull-right">&nbsp;</span></div><div className="col-sm-5"><span>&nbsp;</span></div>
             <div className="col-sm-5">
                 <strong className="pull-right">Calcaleted Clinical Validity Classification:</strong>
             </div>
-            <div className="col-sm-7"><span>{autoClassification}</span></div>
+            <div className="col-sm-7"><span>{this.state.autoClassification}</span></div>
             <div className="col-sm-5"><span className="pull-right">&nbsp;</span></div><div className="col-sm-5"><span>&nbsp;</span></div>
             <Input type="select" ref="alteredClassification" label="Change Provisional Clinical Validity Classification:" defaultValue="none"
                 labelClassName="col-sm-5 control-label" wrapperClassName="col-sm-7" groupClassName="form-group">

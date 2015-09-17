@@ -4,7 +4,7 @@
     "id": "/profiles/provisionalClassification.json",
     "$schema": "http://json-schema.org/draft-04/schema#",
     "type": "object",
-    "required": ["totalScore"],
+    "required": ["totalScore", "autoClassification"],
     "identifyingProperties": ["uuid"],
     "additionalProperties": false,
     "mixinProperties": [
@@ -29,14 +29,12 @@
         "alteredClassification": {
             "title": "Classification Altered",
             "description": "Classification assigned by curator",
-            "type": "string",
-            "default": ""
+            "type": "string"
         },
         "reasons": {
             "title": "Reasons",
             "description": "Reasons for changing the classification",
-            "type": "string",
-            "default": ""
+            "type": "string"
         },
         "active": {
             "title": "Active",
@@ -70,7 +68,7 @@
             "title": "Altered Classification",
             "type": "string"
         },
-        "Reasons": {
+        "reasons": {
             "title": "Reasons",
             "type": "string"
         },
