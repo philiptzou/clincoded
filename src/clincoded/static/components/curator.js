@@ -658,6 +658,10 @@ var flatten = module.exports.flatten = function(obj) {
             flat = flattenIndividual(obj);
             break;
 
+        case 'provisionalClassification':
+            flat = flattenProvisional(obj);
+            break;
+
         default:
             break;
     }
@@ -885,8 +889,8 @@ function flattenGdm(gdm) {
     }
 
     // Flatten variant pathogenics
-    if (gdm.variantPathogenic && gdm.variantPathogenic.length) {
-        flat.variantPathogenic = gdm.variantPathogenic.map(function(vp) {
+    if (gdm.variantPathogenicity && gdm.variantPathogenicity.length) {
+        flat.variantPathogenic = gdm.variantPathogenicity.map(function(vp) {
             var flat_vp = cloneSimpleProps(vp, variantPathogenicSimpleProps);
             if (vp.variant) {
                 flat_vp.variant = vp.variant['@id'];
@@ -909,6 +913,17 @@ function flattenGdm(gdm) {
 
     return flat;
 }
+
+var provisionalSimpleProps = [
+    "date_created", "totalScore", "autoClassification", "alteredClassification", "reasons", "active"
+];
+
+function flattenProvisional(provisional) {
+    // First copy all the simple properties
+    var flat = cloneSimpleProps(provisional, provisionalSimpleProps);
+    return flat;
+}
+
 
 // Given an array of group or families in 'objList', render a list of Orphanet IDs for all diseases in those
 // groups or families.

@@ -19,7 +19,8 @@
         "totalScore": {
             "title": "Total Score",
             "description": "Total score calculated from all selected evidences",
-            "type": "string"
+            "type": "number",
+            "minimum": 0
         },
         "autoClassification": {
             "title": "Classification assigned automatically",
@@ -44,7 +45,7 @@
         }
     },
     "columns": {
-        "submitted_by": {
+        "submitted_by.title": {
             "title": "Owner",
             "type": "string"
         },
@@ -58,7 +59,7 @@
         },
         "totalScore": {
             "title": "Total Score",
-            "type": "string"
+            "type": "number"
         },
         "autoClassification": {
             "title": "Assigned Classification",
@@ -71,10 +72,6 @@
         "reasons": {
             "title": "Reasons",
             "type": "string"
-        },
-        "active": {
-            "title": "Active",
-            "type": "boolean"
         }
     }
 }

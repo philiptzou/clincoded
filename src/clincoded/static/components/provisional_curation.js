@@ -28,7 +28,8 @@ var ProvisionalCuration = React.createClass({
     mixins: [FormMixin, RestMixin, CurationMixin],
 
     contextTypes: {
-        navigate: React.PropTypes.func
+        navigate: React.PropTypes.func,
+        closeModal: React.PropTypes.func
     },
 
     queryValues: {},
@@ -91,9 +92,6 @@ var ProvisionalCuration = React.createClass({
                 }
             }
 
-            stateObj.testStr = this.props.href;
-            // Calculate scores and assign classification
-
             this.setState(stateObj);
 
             return Promise.resolve();
@@ -113,38 +111,47 @@ var ProvisionalCuration = React.createClass({
 
         // Save all form values from the DOM.
         this.saveAllFormValues();
+        if (this.validateDefault()) {
+            var newProvisional = this.state.provisional ? curator.flatten(this.state.provisional) : {};
+            newProvisional.totalScore = this.state.totalScore;
+            newProvisional.autoClassification = this.state.autoClassification;
+            newProvisional.alteredClassification = (this.getFormValue('alteredClassification') !== 'none') ? this.getFormValue('alteredClassification') : '';
+            newProvisional.reasons = this.getFormValue('reasons');
 
-        var gdm = this.state.gdm;
-        var newProvisional = this.state.provisional ? this.state.provisional : {};
-        newProvisional.totalScore = this.state.totalScore;
-        newProvisional.autoClassification = this.state.autoClassification;
-        var value = this.getFormValue('alteredClassification');
-        if (value !== 'none') {
-            newProvisional.alteredClassification = value;
-        }
-        else if (newProvisional.alteredClassification) {
-            delete newProvisional.alteredClassification;
-        }
-        value = this.getFormValue('reasons');
-        if (value !== '') {
-            newProvisional.reasons = value;
-        }
-        else if (newProvisional.reasons) {
-            delete newProvisional.reasons;
-        }
+            if (this.state.provisional) { // edit existing provisional
+                this.putRestData('/provisional/' + this.state.provisional.uuid, newProvisional).then(data => {
+                    this.state.provisional = data['@graph'][0];
+                }).catch(function(e) {
+                    console.log('Provisional creation error = : %o', e);
+                });
+            }
+            else {
+                this.postRestData('/provisional/', newProvisional).then(data => {
+                    return data['@graph'][0];
+                }).then(newProvisional => {
+                    this.state.provisional = newProvisional;
 
-        if (this.state.provisional) {
-            //this.putRestData('/provisional/' + this.state.provisional.uuid, newProvisional).then(data => {
-            //    this.state.provisional = data;
-            //});
-            this.state.provisional = newProvisional;
-            this.setState();
-        }
-        else {
-            this.postRestData('/provisional/', newProvisional);
+                    var theGdm = curator.flatten(this.state.gdm);
+                    if (theGdm.provisionalClassifications) {
+                        theGdm.provisionalClassifications.push(newProvisional['@id']);
+                    }
+                    else {
+                        theGdm.provisionalClassifications = [newProvisional['@id']];
+                    }
+
+                    return this.putRestData('/gdm/' + this.state.gdm.uuid, theGdm).then(data => {
+                        return data['@graph'][0];
+                    });
+                }).then(newGdm => {
+                    this.state.gdm = newGdm;
+                }).catch(function(e) {
+                    console.log('Provisional creation error = : %o', e);
+                });
+            }
         }
         this.resetAllFormValues();
         this.context.navigate('/provisional-curation/?gdm=' + this.state.gdm.uuid);
+        this.setState();
     },
 
     cancelForm: function(e) {
@@ -218,7 +225,7 @@ var ProvisionalCuration = React.createClass({
                                         { (this.state.gdm && rerun !== 'yes') ?
                                             <div  style={{width:'100%'}}>
                                                 <span style={{float:'right'}}>
-                                                    <a className="btn btn-default" href={this.props.href + '&rerun=yes'} title="Click to calculate again">
+                                                    <a className="btn btn-default" href={'/provisional-curation/?gdm=' + this.state.gdm.uuid + '&rerun=yes'} title="Click to calculate again">
                                                         Calculate Again
                                                     </a>
                                                 </span>
