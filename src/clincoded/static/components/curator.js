@@ -890,17 +890,8 @@ function flattenGdm(gdm) {
 
     // Flatten variant pathogenics
     if (gdm.variantPathogenicity && gdm.variantPathogenicity.length) {
-        flat.variantPathogenic = gdm.variantPathogenicity.map(function(vp) {
-            var flat_vp = cloneSimpleProps(vp, variantPathogenicSimpleProps);
-            if (vp.variant) {
-                flat_vp.variant = vp.variant['@id'];
-            }
-            if (vp.assessments && vp.assessments.length) {
-                flat_vp.assessments = vp.assessments.map(function(assessment) {
-                    return assessment['@id'];
-                });
-            }
-            return flat_vp;
+        flat.variantPathogenicity = gdm.variantPathogenicity.map(function(vp) {
+            return vp['@id'];
         });
     }
 

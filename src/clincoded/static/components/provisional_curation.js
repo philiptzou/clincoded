@@ -128,22 +128,22 @@ var ProvisionalCuration = React.createClass({
             else {
                 this.postRestData('/provisional/', newProvisional).then(data => {
                     return data['@graph'][0];
-                }).then(newProvisional => {
-                    this.state.provisional = newProvisional;
+                }).then(savedProvisional => {
+                    this.state.provisional = savedProvisional;
 
                     var theGdm = curator.flatten(this.state.gdm);
                     if (theGdm.provisionalClassifications) {
-                        theGdm.provisionalClassifications.push(newProvisional['@id']);
+                        theGdm.provisionalClassifications.push(savedProvisional['@id']);
                     }
                     else {
-                        theGdm.provisionalClassifications = [newProvisional['@id']];
+                        theGdm.provisionalClassifications = [savedProvisional['@id']];
                     }
 
                     return this.putRestData('/gdm/' + this.state.gdm.uuid, theGdm).then(data => {
                         return data['@graph'][0];
                     });
-                }).then(newGdm => {
-                    this.state.gdm = newGdm;
+                }).then(savedGdm => {
+                    this.state.gdm = savedGdm;
                 }).catch(function(e) {
                     console.log('Provisional creation error = : %o', e);
                 });
