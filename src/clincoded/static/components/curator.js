@@ -72,14 +72,35 @@ var RecordHeader = module.exports.RecordHeader = React.createClass({
         updateOmimId: React.PropTypes.func // Function to call when OMIM ID changes
     },
 
+
+
     render: function() {
         var gdm = this.props.gdm;
+        var session = this.props.session;
 
         if (gdm && gdm['@type'][0] === 'gdm') {
             var gene = this.props.gdm.gene;
             var disease = this.props.gdm.disease;
             var mode = this.props.gdm.modeInheritance.match(/^(.*?)(?: \(HP:[0-9]*?\)){0,1}$/)[1];
 
+            var provisional;
+            if (gdm.provisionalClassifications.length > 0) {
+                for (var i in gdm.provisionalClassifications) {
+                    if (userMatch(gdm.provisionalClassifications[i].submitted_by, session)) {
+                        provisional = gdm.provisionalClassifications[i];
+                        break;
+                    }
+                }
+            }
+            var pathogenicitySupported = false;
+            if (gdm.variantPathogenicity.length > 0) {
+                for (var i in gdm.variantPathogenicity) {
+                    if (userMatch(gdm.variantPathogenicity[i].submitted_by, session) && gdm.variantPathogenicity[i].assessments[0].value === 'Supports') {
+                        pathogenicitySupported = true;
+                        break;
+                    }
+                }
+            }
             return (
                 <div>
                     <div className="curation-data-title">
@@ -87,6 +108,25 @@ var RecordHeader = module.exports.RecordHeader = React.createClass({
                             <h1>{gene.symbol} – {disease.term}</h1>
                             <h2>{mode}</h2>
                         </div>
+                        { provisional ?
+                            <div className="container">
+                                <div style={{'float':'right', 'color':'#000', 'background-color':'#c0c0c0', 'text-align':'left'}}>
+                                    <dd>Summary generated: {moment(provisional.last_modified).format("YYYY MMM DD, h:mm a")}</dd>
+                                    <dd>Calculated: {provisional.totalScore}, Curators Value: {provisional.autoClassification}</dd>
+                                    <a href={'/provisional-curation/?gdm=' + gdm.uuid}>Edit / Change Classification</a>
+                                    <br />
+                                    <a className="btn btn-default" href={'/provisional-curation/?gdm=' + gdm.uuid + '&rerun=yes'}>Generate New Summary</a>
+                                </div>
+                            </div>
+                            : (pathogenicitySupported ?
+                                <div className="container">
+                                    <div style={{'float':'right'}}>
+                                        <a className="btn btn-default" href={'/provisional-curation/?gdm=' + gdm.uuid}>Generate Summary</a>
+                                    </div>
+                                </div>
+                                : null
+                            )
+                        }
                     </div>
                     <div className="container curation-data">
                         <div className="row equal-height">

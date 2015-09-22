@@ -111,6 +111,7 @@ var CurationCentral = React.createClass({
     render: function() {
         var gdm = this.state.currGdm;
         var pmid = this.state.currPmid;
+        var session = this.props.session;
 
         // Find the GDM's annotation for the article with the curren PMID
         var annotation = gdm && gdm.annotations && gdm.annotations.length && _(gdm.annotations).find(function(annotation) {
@@ -120,7 +121,7 @@ var CurationCentral = React.createClass({
 
         return (
             <div>
-                <RecordHeader gdm={gdm} omimId={this.state.currOmimId} updateOmimId={this.updateOmimId} />
+                <RecordHeader gdm={gdm} omimId={this.state.currOmimId} updateOmimId={this.updateOmimId} session={session} />
                 <div className="container">
                     <div className="row curation-content">
                         <div className="col-md-3">
@@ -313,9 +314,9 @@ var AddPmidModal = React.createClass({
     // nothing happened.
     cancelForm: function(e) {
         e.preventDefault(); e.stopPropagation(); // Don't run through HTML submit handler
-        
+
         //only a mouse click on cancel button closes modal
-        //(do not let the enter key [which evaluates to 0 mouse 
+        //(do not let the enter key [which evaluates to 0 mouse
         //clicks] be accepted to close modal)
         if (e.detail >= 1){
             this.props.closeModal();

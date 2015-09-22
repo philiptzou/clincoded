@@ -168,6 +168,7 @@ var ProvisionalCuration = React.createClass({
     render: function() {
         this.queryValues.gdmUuid = queryKeyValue('gdm', this.props.href);
         var rerun = queryKeyValue('rerun', this.props.href);
+        var edit = queryKeyValue('edit', this.props.href);
         //this.queryValues.rerun = rerun;
 
         var alteredClassification = (this.state.provisional && this.state.provisional.alteredClassification) ? this.state.provisional.alteredClassification : '';
@@ -179,71 +180,79 @@ var ProvisionalCuration = React.createClass({
             <div>
                 { this.state.gdm ?
                     <div>
-                        <RecordHeader gdm={this.state.gdm} omimId={this.state.currOmimId} updateOmimId={this.updateOmimId} />
+                        <RecordHeader gdm={this.state.gdm} omimId={this.state.currOmimId} updateOmimId={this.updateOmimId} session={this.props.session} />
                         <div className="container">
-                            <h1>Summary And Provisional Classification: </h1>
-                                { (this.state.gdm && this.state.provisional) ?
-                                    <div>
-                                        <PanelGroup accordion>
-                                            <Panel width="100%" title="View - Currently saved data" open>
-                                                <div className="row">
-                                                    <div className="col-sm-5"><strong>Total Score:</strong></div>
-                                                    <div className="col-sm-7"><span>{this.state.provisional.totalScore}</span></div>
-                                                </div>
-                                                <div className="row">
-                                                    <div className="col-sm-5">
-                                                        <strong>Calcaleted Clinical Validity Classification:</strong
-                                                    ></div>
-                                                    <div className="col-sm-7"><span>{this.state.provisional.autoClassification}</span></div>
-                                                </div>
-                                                <div className="row">
-                                                    <div className="col-sm-5">
-                                                        <strong>Change Provisional Clinical Validity Classification:</strong>
-                                                    </div>
-                                                    <div className="col-sm-7"><span>{alteredClassification}</span></div>
-                                                </div>
-                                                <div className="row">
-                                                    <div className="col-sm-5"><strong>Explain Reason(s) for Change:</strong></div>
-                                                    <div className="col-sm-7"><span>{reasons}</span></div>
-                                                </div>
-                                                <div className="row">
-                                                    <div className="col-sm-5"><strong>Date Created:</strong></div>
-                                                    <div className="col-sm-7">
-                                                        <span>{moment(this.state.provisional.date_created).format("YYYY MMM DD, h:mm a")}</span>
-                                                    </div>
-                                                </div>
-                                                <div className="row">
-                                                    <div className="col-sm-5"><strong>Last Modified:</strong></div>
-                                                    <div className="col-sm-7">
-                                                        <span>{moment(this.state.provisional.last_modified).format("YYYY MMM DD, h:mm a")}</span>
-                                                    </div>
-                                                </div>
-                                                <div><span>&nbsp;</span></div>
-                                                <br />
-                                            </Panel>
-                                        </PanelGroup>
-                                        { (this.state.gdm && rerun !== 'yes') ?
-                                            <div  style={{width:'100%'}}>
-                                                <span style={{float:'right'}}>
-                                                    <a className="btn btn-default" href={'/provisional-curation/?gdm=' + this.state.gdm.uuid + '&rerun=yes'} title="Click to calculate again">
-                                                        Calculate Again
-                                                    </a>
-                                                </span>
-                                                <span style={{float:'right'}}>&nbsp;</span>
-                                                <span style={{float:'right'}}>
-                                                    <a className="btn btn-default" href={'/curation-central/?gdm=' + this.state.gdm.uuid}>
-                                                        Back to GDM
-                                                    </a>
-                                                </span>
+                            { (this.state.gdm && this.state.provisional && edit !== 'yes') ?
+                                <div>
+                                    <h1>View Summary and Provisional Classification</h1>
+                                    <PanelGroup accordion>
+                                        <Panel width="100%" title="Currently Saved Calculation and Classification" open>
+                                            <div className="row">
+                                                <div className="col-sm-5"><strong>Total Score:</strong></div>
+                                                <div className="col-sm-7"><span>{this.state.provisional.totalScore}</span></div>
                                             </div>
-                                            : null
-                                        }
-                                    </div>
-                                    : null
-                                }
-                                { (this.state.gdm && (!this.state.provisional || rerun === 'yes')) ?
-                                    NewCalculation.call(this) : null
-                                }
+                                            <div className="row">
+                                                <div className="col-sm-5">
+                                                    <strong>Calculated Clinical Validity Classification:</strong
+                                                ></div>
+                                                <div className="col-sm-7"><span>{this.state.provisional.autoClassification}</span></div>
+                                            </div>
+                                            <div className="row">
+                                                <div className="col-sm-5">
+                                                    <strong>Change Provisional Clinical Validity Classification:</strong>
+                                                </div>
+                                                <div className="col-sm-7"><span>{alteredClassification}</span></div>
+                                            </div>
+                                            <div className="row">
+                                                <div className="col-sm-5"><strong>Explain Reason(s) for Change:</strong></div>
+                                                <div className="col-sm-7"><span>{reasons}</span></div>
+                                            </div>
+                                            <div className="row">
+                                                <div className="col-sm-5"><strong>Date Created:</strong></div>
+                                                <div className="col-sm-7">
+                                                    <span>{moment(this.state.provisional.date_created).format("YYYY MMM DD, h:mm a")}</span>
+                                                </div>
+                                            </div>
+                                            <div className="row">
+                                                <div className="col-sm-5"><strong>Last Modified:</strong></div>
+                                                <div className="col-sm-7">
+                                                    <span>{moment(this.state.provisional.last_modified).format("YYYY MMM DD, h:mm a")}</span>
+                                                </div>
+                                            </div>
+                                            <div><span>&nbsp;</span></div>
+                                            <br />
+                                        </Panel>
+                                    </PanelGroup>
+                                    { (this.state.gdm && rerun !== 'yes') ?
+                                        <div  style={{width:'100%'}}>
+                                            <div style={{float:'right'}}>
+                                                <a className="btn btn-default" href={'/provisional-curation/?gdm=' + this.state.gdm.uuid + '&edit=yes'}
+                                                    title="Click to edit current data">
+                                                    Edit
+                                                </a>
+                                            </div>
+                                            <div style={{float:'right'}}>&nbsp;</div>
+                                            <div style={{float:'right'}}>
+                                                <a className="btn btn-default" href={'/curation-central/?gdm=' + this.state.gdm.uuid}>
+                                                    Return to Record Curation
+                                                </a>
+                                            </div>
+                                        </div>
+                                        : null
+                                    }
+                                </div>
+                                :
+                                (edit === 'yes' ?
+                                    EditCurrent.call(this)
+                                    :
+                                    null
+                                )
+                            }
+                            { (this.state.gdm && (!this.state.provisional || rerun === 'yes')) ?
+                                NewCalculation.call(this)
+                                :
+                                null
+                            }
                             </div>
                         </div>
                     : null
@@ -254,6 +263,66 @@ var ProvisionalCuration = React.createClass({
 });
 
 globals.curator_page.register(ProvisionalCuration,  'curator_page', 'provisional-curation');
+
+var EditCurrent = function() {
+    var alteredClassification = this.state.provisional.alteredClassification ? this.state.provisional.alteredClassification : 'none'
+    return (
+        <div>
+            <h1>Edit Summary and Provisional Classification</h1>
+            <Form submitHandler={this.submitForm} formClassName="form-horizontal form-std">
+                <PanelGroup accordion>
+                    <Panel width="100%" title="Currently Saved Calculation and Classification" open>
+                        <div className="row">
+                            <div className="col-sm-5"><strong>Total Score:</strong></div>
+                            <div className="col-sm-7"><span>{this.state.provisional.totalScore}</span></div>
+                        </div>
+                        <div className="row">
+                            <div className="col-sm-5">
+                                <strong>Calculated Clinical Validity Classification:</strong
+                            ></div>
+                            <div className="col-sm-7"><span>{this.state.provisional.autoClassification}</span></div>
+                        </div>
+                        <div className="row">
+                            <Input type="select" ref="alteredClassification" label="Change Provisional Clinical Validity Classification:"
+                                value={alteredClassification} labelClassName="col-sm-5 control-label" wrapperClassName="col-sm-7"
+                                groupClassName="form-group">
+                                <option value="none">No Selection</option>
+                                <option disabled="disabled"></option>
+                                <option value="Definitive">Definitive</option>
+                                <option value="Strong">Strong</option>
+                                <option value="Moderate">Moderate</option>
+                                <option value="Limited">Limited</option>
+                            </Input>
+                        </div>
+                        <div className="row">
+                            <Input type="textarea" ref="reasons" label="Explain Reason(s) for Change:" rows="5" labelClassName="col-sm-5 control-label"
+                                value={this.state.provisional.reasons} wrapperClassName="col-sm-7" groupClassName="form-group" />
+                        </div>
+                        <div className="row">
+                            <div className="col-sm-5"><strong>Date Created:</strong></div>
+                            <div className="col-sm-7">
+                                <span>{moment(this.state.provisional.date_created).format("YYYY MMM DD, h:mm a")}</span>
+                            </div>
+                        </div>
+                        <div className="row">
+                            <div className="col-sm-5"><strong>Last Modified:</strong></div>
+                            <div className="col-sm-7">
+                                <span>{moment(this.state.provisional.last_modified).format("YYYY MMM DD, h:mm a")}</span>
+                            </div>
+                        </div>
+                        <div><span>&nbsp;</span></div>
+                        <br />
+                    </Panel>
+                </PanelGroup>
+                <div className='modal-footer'>
+                    <Input type="cancel" inputClassName="btn-default btn-inline-spacer" cancelHandler={this.cancelForm} />
+                    <Input type="submit" inputClassName="btn-primary btn-inline-spacer pull-right" id="submit" title="Save" />
+                </div>
+            </Form>
+        </div>
+    );
+};
+
 
 var NewCalculation = function() {
     var gdm = this.state.gdm;
@@ -436,18 +505,20 @@ var NewCalculation = function() {
 
         return (
         <div>
+            <h1>Curation Summary and Provisional Classification</h1>
             <Form submitHandler={this.submitForm} formClassName="form-horizontal form-std">
                 <PanelGroup accordion>
-                    <Panel title="Curation - New calculation" open>
+                    <Panel title="New calculation and Classification" open>
                         <div className="form-group">
                             <div className="col-sm-5"><strong className="pull-right">Total Score:</strong></div>
                             <div className="col-sm-7"><span>{this.state.totalScore}</span></div>
                             <div className="col-sm-5"><span className="pull-right">&nbsp;</span></div><div className="col-sm-5"><span>&nbsp;</span></div>
                             <div className="col-sm-5">
-                                <strong className="pull-right">Calcaleted Clinical Validity Classification:</strong>
+                                <strong className="pull-right">Calculated Clinical Validity Classification:</strong>
                             </div>
                             <div className="col-sm-7"><span>{this.state.autoClassification}</span></div>
-                            <div className="col-sm-5"><span className="pull-right">&nbsp;</span></div><div className="col-sm-5"><span>&nbsp;</span></div>
+                            <div className="col-sm-5"><span className="pull-right">&nbsp;</span></div>
+                            <div className="col-sm-5"><span>&nbsp;</span></div>
                             <Input type="select" ref="alteredClassification" label="Change Provisional Clinical Validity Classification:" defaultValue="none"
                                 labelClassName="col-sm-5 control-label" wrapperClassName="col-sm-7" groupClassName="form-group">
                                 <option value="none">No Selection</option>
@@ -459,6 +530,12 @@ var NewCalculation = function() {
                             </Input>
                             <Input type="textarea" ref="reasons" label="Explain Reason(s) for Change:" rows="5" labelClassName="col-sm-5 control-label"
                                 wrapperClassName="col-sm-7" groupClassName="form-group" />
+                            <div className="col-sm-5"><span className="pull-right">&nbsp;</span></div>
+                            <div className="col-sm-7">
+                                <span>
+                                **Note: If your selected Clinical Validity Classification is different from the Calculated value, provide a reason to expain why you changed it.
+                                </span>
+                            </div>
                             <div className="col-sm-5"><strong>Scoring Details</strong></div>
                             <hr style={{width:'100%', border:'solid 1px #ddd'}} />
                             <div>
@@ -487,7 +564,7 @@ var NewCalculation = function() {
                             <hr style={{width:'100%', border:'solid 1px #ddd'}} />
                             { this.state.provisional ?
                                 <div className="col-sm-7" style={{width:'100%'}}>
-                                    <span style={{color:'red', float:'right'}}>Click Save below will permanenetly change your currently saved data.</span>
+                                    <span style={{float:'right'}}>**Click Save below will permanenetly change your currently saved data.</span>
                                 </div>
                                 : null
                             }
@@ -496,7 +573,7 @@ var NewCalculation = function() {
                 </PanelGroup>
                 <div className='modal-footer'>
                     { (!this.state.provisional) ?
-                        <a className="btn btn-default" href={'/curation-central/?gdm=' + this.state.gdm.uuid}>Back to GDM</a>
+                        <a className="btn btn-default" href={'/curation-central/?gdm=' + this.state.gdm.uuid}>Return to Record Curation</a>
                         :
                         <Input type="cancel" inputClassName="btn-default btn-inline-spacer" cancelHandler={this.cancelForm} />
                     }
